@@ -55,10 +55,10 @@ if(selectedMap!==0){const mc=mapColors[selectedMap];sand.diffuseColor=B.Color3.F
 function tangent(i){return points[(i+1)%N].subtract(points[(i+N-1)%N]).normalize()}
 function offset(i,side){let t=tangent(i);return points[i].add(new B.Vector3(-t.z,0,t.x).scale(side))}
 function ribbon(name,width,material,y=0){let path1=[],path2=[];for(let i=0;i<=N;i++){let k=i%N;path1.push(offset(k,-width/2).add(new B.Vector3(0,y,0)));path2.push(offset(k,width/2).add(new B.Vector3(0,y,0)))}let mesh=B.MeshBuilder.CreateRibbon(name,{pathArray:[path1,path2],sideOrientation:B.Mesh.DOUBLESIDE},scene);mesh.material=material;return mesh}
-ribbon('road',21,road,.02);
+ribbon('road',25,road,.02);
 const shoulder=mat('warm shoulder','#f3e5bc'),stripe=mat('lane dash','#fff5d4');
 for(let i=0;i<N;i+=4){
-  for(const side of [-1,1]){const p=offset(i,side*10);const t=tangent(i);
+  for(const side of [-1,1]){const p=offset(i,side*12);const t=tangent(i);
     const line=B.MeshBuilder.CreateBox('edge',{width:.32,height:.08,depth:5.6},scene);
     line.position=p.add(new B.Vector3(0,.23,0));line.rotation.y=Math.atan2(t.x,t.z);line.material=shoulder;
   }
@@ -66,7 +66,7 @@ for(let i=0;i<N;i+=4){
 for(let i=0;i<N;i+=8){const p=points[i],t=tangent(i);const dash=B.MeshBuilder.CreateBox('dash',{width:.28,height:.08,depth:7},scene);dash.position=p.add(new B.Vector3(0,.25,0));dash.rotation.y=Math.atan2(t.x,t.z);dash.material=stripe}
 
 function clearOfTrack(position,objectRadius=0){
- const clearance=19+objectRadius;
+ const clearance=22+objectRadius;
  for(const q of points){const dx=position.x-q.x,dz=position.z-q.z;if(dx*dx+dz*dz<clearance*clearance)return false}
  return true;
 }
@@ -182,6 +182,7 @@ const championship=[
  {name:'Nitro Masters',difficulty:'expert',bonus:350,rounds:3,laps:3,rule:'MASTERS · 3 races · limited Nitro recharge · points decide',nitroRate:31,boostRecharge:2}
 ];
 let seriesRound=0,seriesScores=[0,0,0,0],seriesActive=false;
+let seriesHistory=[];
 const pointsAwarded=[10,7,5,3];
 function seriesText(){
  if(!seriesActive)return '';
@@ -231,9 +232,9 @@ function begin(m){
  mode=m;
  if(m==='career'){
   setDifficulty(championship[careerStage].difficulty);
-  if(!seriesActive){seriesRound=0;seriesScores=[0,0,0,0];seriesActive=true}
+  if(!seriesActive){seriesRound=0;seriesScores=[0,0,0,0];seriesHistory=[];seriesActive=true}
  }
- active=true;elapsed=0;countdown=3.5;inventory=2;previous=0;player.speed=0;player.lap=0;player.boost=100;place(player,0,-3);bots.forEach((b,i)=>{b.speed=0;b.progress=-(3+i*3);b.lap=0;b.lane=i%2?-3:3;b.stun=0;b.pulse=i*2.1;b.personality=i;place(b,N-3-i*3,b.lane)});document.getElementById('menu').style.display='none';msg.textContent=''}
+ active=true;elapsed=0;countdown=3.5;inventory=2;previous=0;player.speed=0;player.lap=0;player.boost=100;place(player,0,-3);bots.forEach((b,i)=>{b.speed=0;b.progress=-(3+i*3);b.lap=0;b.lane=i%2?-3:3;b.stun=0;b.pulse=i*2.1;b.personality=i;b.finishTime=null;place(b,N-3-i*3,b.lane)});document.getElementById('menu').style.display='none';msg.textContent=''}
 document.getElementById('start').onclick=()=>begin('quick');document.getElementById('career').onclick=()=>begin('career');
 const hud=document.getElementById('hud'),msg=document.getElementById('message');
 document.getElementById('resultContinue').onclick=()=>{
@@ -249,15 +250,22 @@ function nearest(pos){let best=Infinity,idx=0;for(let i=0;i<N;i++){let d=B.Vecto
 function finish(){
  active=false;
  const playerTotal=player.lap*N+nearest(player.root.position).idx;
- const competitors=[{id:0,total:playerTotal},...bots.map((b,i)=>({id:i+1,total:b.lap*N+b.progress}))].sort((a,b)=>b.total-a.total);
+ const competitors=[{id:0,total:playerTotal,finishTime:elapsed},...bots.map((b,i)=>({id:i+1,total:b.lap*N+b.progress,finishTime:b.finishTime}))].sort((a,b)=>{
+  if(a.finishTime!==null&&b.finishTime!==null)return a.finishTime-b.finishTime;
+  if(a.finishTime!==null)return -1;
+  if(b.finishTime!==null)return 1;
+  return b.total-a.total;
+ });
  const rank=competitors.findIndex(x=>x.id===0)+1;
  let reward=mode==='career'?Math.max(30,120-rank*20):0;
  let result='FINISHED #'+rank+' · '+elapsed.toFixed(1)+'s';
  if(mode==='career'){
   const cup=championship[careerStage];
   competitors.forEach((x,i)=>seriesScores[x.id]+=pointsAwarded[i]);
+  seriesHistory.push({round:seriesRound+1,order:competitors.map(x=>x.id),points:seriesScores.slice()});
   seriesRound++;
   const scoreLine=' · POINTS YOU '+seriesScores[0]+' / RIVALS '+seriesScores.slice(1).join(', ');
+  const finalScores=seriesScores.slice();
   if(seriesRound>=cup.rounds){
    const champion=seriesScores.every((score,i)=>i===0||seriesScores[0]>score);
    if(champion){
@@ -280,7 +288,12 @@ function finish(){
  document.getElementById('resultSubtitle').textContent=result;
  document.getElementById('resultReward').textContent='🪙 +'+reward+' coins · Balance '+coins;
  document.getElementById('resultTable').innerHTML=competitors.map((x,i)=>'<div class="resultRow '+(x.id===0?'isPlayer':'')+'"><span>'+(i+1)+'. '+(x.id===0?'YOU':('RIVAL '+x.id))+'</span><strong>'+(mode==='career'?pointsAwarded[i]+' pts':'#'+(i+1))+'</strong></div>').join('');
- document.getElementById('resultStandings').innerHTML=mode==='career'?(seriesActive?'CHAMPIONSHIP STANDINGS · '+seriesText():'Final championship standings are shown in the result above'):'Quick race · '+mapCatalog[selectedMap].name;
+ document.getElementById('resultStandings').innerHTML=mode==='career'
+ ?'<strong>'+(seriesActive?'CURRENT':'FINAL')+' CHAMPIONSHIP STANDINGS</strong>'+
+   '<div class="resultRow"><span>YOU</span><strong>'+finalScores[0]+' pts</strong></div>'+
+   [1,2,3].map(i=>'<div class="resultRow"><span>RIVAL '+i+'</span><strong>'+finalScores[i]+' pts</strong></div>').join('')+
+   '<small>Race history: '+seriesHistory.map(h=>'R'+h.round+' '+h.order.map(id=>id===0?'YOU':'R'+id).join(' > ')).join(' · ')+'</small>'
+ :'Quick race · '+mapCatalog[selectedMap].name;
  document.getElementById('resultContinue').textContent=mode==='career'&&seriesActive?'▶ NEXT ROUND':'⌂ MAIN MENU';
  results.style.display='flex';
  msg.textContent='🏁 FINISH!';
@@ -304,6 +317,7 @@ function drawMinimap(){
 }
 engine.runRenderLoop(()=>{let dt=Math.min(engine.getDeltaTime()/1000,.04);if(active){if(countdown>0){countdown-=dt;msg.textContent=countdown>1?Math.ceil(countdown):'GO!';msg.classList.add('counting');if(countdown<=0){msg.textContent='';msg.classList.remove('counting')}}else{elapsed+=dt;let turn=(held('a','arrowleft')?-1:0)+(held('d','arrowright')?1:0),accelerate=true,brake=held('s','arrowdown'),drift=held(' '),nitro=held('shift');let target=(brake?9:53)*(carsCatalog[selectedCar].speed+speedLevel*.045);player.boost=Math.min(100,player.boost+dt*(mode==='career'?championship[careerStage].boostRecharge:5));if(nitro&&!brake&&player.boost>0){target=95*(carsCatalog[selectedCar].speed+speedLevel*.045);player.boost=Math.max(0,player.boost-dt*(mode==='career'?championship[careerStage].nitroRate:23));msg.textContent='⚡ NITRO!'}else if(drift&&Math.abs(player.speed)>8){msg.textContent='💨 DRIFT!'}else if(msg.textContent==='⚡ NITRO!'||msg.textContent==='💨 DRIFT!'){msg.textContent=''}player.speed+=(target-player.speed)*Math.min(1,dt*(brake?3.5:1.5));player.root.rotation.y+=turn*dt*(.8+Math.min(Math.abs(player.speed)/42,1)*1.5)*(drift?2.1:1)*(carsCatalog[selectedCar].handling+handlingLevel*.06)*Math.sign(player.speed||1);let forward=new B.Vector3(Math.sin(player.root.rotation.y),0,Math.cos(player.root.rotation.y));player.root.position.addInPlace(forward.scale(player.speed*dt));let near=nearest(player.root.position);if(near.dist>15){player.speed*=1-dt*.9;if(near.dist>45){let p=offset(near.idx,0);player.root.position=B.Vector3.Lerp(player.root.position,p,.07)}}if(near.idx<12&&previous>N-16&&player.speed>0){player.lap++;if(player.lap>=(mode==='career'?championship[careerStage].laps:3))finish()}previous=near.idx;for(let b of bots){
   const i=bots.indexOf(b);
+  if(b.finishTime!==null)continue;
   const playerTotal=player.lap*N+near.idx;
   const botTotal=b.lap*N+b.progress;
   const gap=playerTotal-botTotal;
@@ -319,7 +333,7 @@ engine.runRenderLoop(()=>{let dt=Math.min(engine.getDeltaTime()/1000,.04);if(act
   const desired=b.stun>0?cruise*.3:cruise;
   b.speed+=(desired-b.speed)*Math.min(1,dt*2.1);
   b.progress+=dt*b.speed*cfg.rate;
-  if(b.progress>=N){b.progress-=N;b.lap++}
+  if(b.progress>=N){b.progress-=N;b.lap++;if(b.lap>=(mode==='career'?championship[careerStage].laps:3)){b.finishTime=elapsed;b.progress=0}}
   const k=((Math.floor(b.progress)%N)+N)%N;
   const fraction=((b.progress%1)+1)%1;
   const next=(k+1)%N;
@@ -331,4 +345,4 @@ engine.runRenderLoop(()=>{let dt=Math.min(engine.getDeltaTime()/1000,.04);if(act
   b.root.rotation.y=Math.atan2(dir.x,dir.z);
   b.root.position=B.Vector3.Lerp(b.root.position,targetPos,Math.min(1,dt*12));
   if(B.Vector3.Distance(player.root.position,b.root.position)<4)player.speed*=.965;
-}for(let p of pickups){p.mesh.rotation.y+=dt*2;if(!p.active){p.cool-=dt;if(p.cool<=0){p.active=true;p.mesh.setEnabled(true)}}else if(B.Vector3.Distance(player.root.position,p.mesh.position)<4){p.active=false;p.cool=12;p.mesh.setEnabled(false);inventory=Math.min(3,inventory+1);player.boost=Math.min(100,player.boost+25)}}if(held('e')&&inventory>0&&!keys._used){inventory--;msg.textContent='💥 POWER!';setTimeout(()=>{if(msg.textContent==='💥 POWER!')msg.textContent=''},800);player.boost=Math.min(100,player.boost+35);bots.forEach(b=>{if(B.Vector3.Distance(player.root.position,b.root.position)<30)b.stun=2.5});keys._used=true}if(!held('e'))keys._used=false;let rank=1+bots.filter(b=>b.lap*N+b.progress>player.lap*N+near.idx).length;hud.innerHTML='<span class="hudTag">🏁 '+(mode==='career'?championship[careerStage].name:difficulty.toUpperCase()+' QUICK RACE')+'</span><br><span class="hudPosition">POSITION '+rank+'/4</span> &nbsp; LAP '+Math.min(mode==='career'?championship[careerStage].laps:3,player.lap+1)+'/'+(mode==='career'?championship[careerStage].laps:3)+'<br><span class="hudSpeed">⚡ '+Math.round(Math.abs(player.speed)*3.6)+'</span> km/h &nbsp; NITRO '+Math.round(player.boost)+'%<br>💥 POWER-UPS '+inventory+' &nbsp; ⏱ '+elapsed.toFixed(1)+'s'+(mode==='career'?'<br>🏆 ROUND '+(seriesRound+1)+'/'+championship[careerStage].rounds:'')}}renderCarEffects();drawMinimap();scene.render()});window.addEventListener('resize',()=>engine.resize());
+}for(let p of pickups){p.mesh.rotation.y+=dt*2;if(!p.active){p.cool-=dt;if(p.cool<=0){p.active=true;p.mesh.setEnabled(true)}}else if(B.Vector3.Distance(player.root.position,p.mesh.position)<4){p.active=false;p.cool=12;p.mesh.setEnabled(false);inventory=Math.min(3,inventory+1);player.boost=Math.min(100,player.boost+25)}}if(held('e')&&inventory>0&&!keys._used){inventory--;msg.textContent='💥 POWER!';setTimeout(()=>{if(msg.textContent==='💥 POWER!')msg.textContent=''},800);player.boost=Math.min(100,player.boost+35);bots.forEach(b=>{if(B.Vector3.Distance(player.root.position,b.root.position)<30)b.stun=2.5});keys._used=true}if(!held('e'))keys._used=false;let rank=1+bots.filter(b=>b.finishTime!==null||b.lap*N+b.progress>player.lap*N+near.idx).length;hud.innerHTML='<span class="hudTag">🏁 '+(mode==='career'?championship[careerStage].name:difficulty.toUpperCase()+' QUICK RACE')+'</span><br><span class="hudPosition">POSITION '+rank+'/4</span> &nbsp; LAP '+Math.min(mode==='career'?championship[careerStage].laps:3,player.lap+1)+'/'+(mode==='career'?championship[careerStage].laps:3)+'<br><span class="hudSpeed">⚡ '+Math.round(Math.abs(player.speed)*3.6)+'</span> km/h &nbsp; NITRO '+Math.round(player.boost)+'%<br>💥 POWER-UPS '+inventory+' &nbsp; ⏱ '+elapsed.toFixed(1)+'s'+(mode==='career'?'<br>🏆 ROUND '+(seriesRound+1)+'/'+championship[careerStage].rounds:'')}}renderCarEffects();drawMinimap();scene.render()});window.addEventListener('resize',()=>engine.resize());
