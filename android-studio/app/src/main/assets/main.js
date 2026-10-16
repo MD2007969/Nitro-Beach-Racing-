@@ -139,7 +139,7 @@ const difficultySettings={
  easy:{speed:39,spread:1.2,catchup:3,rate:.14},
  normal:{speed:51,spread:2.3,catchup:7,rate:.155},
  hard:{speed:64,spread:3.5,catchup:9,rate:.165},
- expert:{speed:61,spread:2.8,catchup:5,rate:.155}
+ expert:{speed:65,spread:3.0,catchup:5.5,rate:.159}
 };
 let difficulty=localStorage.getItem('nbr_difficulty')||'normal';
 if(!difficultySettings[difficulty])difficulty='normal';
