@@ -104,12 +104,58 @@ function setDifficulty(value){
 document.querySelectorAll('[data-difficulty]').forEach(b=>b.onclick=()=>setDifficulty(b.dataset.difficulty));
 setDifficulty(difficulty);
 const held=(...ks)=>ks.some(k=>keys[k]);let active=false,elapsed=0,countdown=0,inventory=0,coins=Number(localStorage.getItem('nbr_coins')||0),mode='quick',previous=0;
-document.getElementById('progress').textContent='Career coins saved: '+coins;document.querySelectorAll('[data-theme]').forEach(b=>b.onclick=()=>applyTheme(b.dataset.theme));applyTheme(selectedTheme);
-function begin(m){mode=m;active=true;elapsed=0;countdown=3.5;inventory=2;previous=0;player.speed=0;player.lap=0;player.boost=100;place(player,0,-3);bots.forEach((b,i)=>{b.speed=0;b.progress=-(3+i*3);b.lap=0;b.lane=i%2?-3:3;b.stun=0;b.pulse=i*2.1;b.personality=i;place(b,N-3-i*3,b.lane)});document.getElementById('menu').style.display='none';msg.textContent=''}
+const carsCatalog=[
+ {name:'Beach Runner',price:0,color:'#ff9f18',speed:1,handling:1},
+ {name:'Coastal GT',price:250,color:'#25c8d8',speed:1.10,handling:1.06},
+ {name:'Sunset Viper',price:650,color:'#ee4c70',speed:1.18,handling:1.12},
+ {name:'Nitro Phantom',price:1300,color:'#a06dff',speed:1.27,handling:1.16}
+];
+let ownedCars=JSON.parse(localStorage.getItem('nbr_owned_cars')||'[0]');
+if(!Array.isArray(ownedCars))ownedCars=[0];
+let selectedCar=Number(localStorage.getItem('nbr_selected_car')||0);
+if(!ownedCars.includes(selectedCar))selectedCar=0;
+let speedLevel=Math.max(0,Math.min(3,Number(localStorage.getItem('nbr_speed_level')||0)));
+let handlingLevel=Math.max(0,Math.min(3,Number(localStorage.getItem('nbr_handling_level')||0)));
+let careerWins=Math.max(0,Number(localStorage.getItem('nbr_career_wins')||0));
+let careerStage=Math.max(0,Math.min(3,Number(localStorage.getItem('nbr_career_stage')||0)));
+const championship=[
+ {name:'Rookie Cup',difficulty:'easy',bonus:80},
+ {name:'Coastal Challenge',difficulty:'normal',bonus:130},
+ {name:'Sunset Championship',difficulty:'hard',bonus:210},
+ {name:'Nitro Masters',difficulty:'expert',bonus:350}
+];
+function saveGarage(){
+ localStorage.setItem('nbr_owned_cars',JSON.stringify(ownedCars));
+ localStorage.setItem('nbr_selected_car',String(selectedCar));
+ localStorage.setItem('nbr_speed_level',String(speedLevel));
+ localStorage.setItem('nbr_handling_level',String(handlingLevel));
+ localStorage.setItem('nbr_coins',String(coins));
+}
+function applyCar(){const spec=carsCatalog[selectedCar];player.root.getChildMeshes().forEach(m=>{if(m.name==='YOU body'||m.name==='YOU front hood'||m.name==='YOU rear deck'||m.name==='YOU roof'||m.name==='YOU mirror')m.material.diffuseColor=B.Color3.FromHexString(spec.color)})}
+function refreshGarage(){
+ document.getElementById('garageCoins').textContent='🪙 '+coins+' coins';
+ document.getElementById('garageCars').innerHTML=carsCatalog.map((spec,i)=>'<button data-car="'+i+'" style="background:'+(selectedCar===i?'#35a86c':'#263e57')+';color:white;margin:4px;border:1px solid #8ca4ba">'+spec.name+' · '+(ownedCars.includes(i)?selectedCar===i?'SELECTED':'OWNED':spec.price+' coins')+'</button>').join('');
+ document.querySelectorAll('[data-car]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.car),spec=carsCatalog[i];if(!ownedCars.includes(i)){if(coins<spec.price){alert('Not enough coins! Race in Career to earn more.');return}coins-=spec.price;ownedCars.push(i)}selectedCar=i;saveGarage();applyCar();refreshGarage()});
+ const speedCost=100*(speedLevel+1),handlingCost=100*(handlingLevel+1);
+ document.getElementById('upgradeSpeed').textContent=speedLevel>=3?'SPEED MAXED':'⚡ Speed Lv '+speedLevel+'/3 · '+speedCost+' coins';
+ document.getElementById('upgradeHandling').textContent=handlingLevel>=3?'HANDLING MAXED':'🎯 Handling Lv '+handlingLevel+'/3 · '+handlingCost+' coins';
+ document.getElementById('progress').textContent='🪙 '+coins+' coins · '+careerWins+' career wins';
+ document.getElementById('career').textContent='CAREER: '+championship[careerStage].name;
+}
+document.getElementById('garageOpen').onclick=()=>{refreshGarage();document.getElementById('garage').style.display='flex'};
+document.getElementById('garageClose').onclick=()=>document.getElementById('garage').style.display='none';
+for(const [id,kind] of [['upgradeSpeed','speed'],['upgradeHandling','handling']]){
+ document.getElementById(id).onclick=()=>{const level=kind==='speed'?speedLevel:handlingLevel,cost=100*(level+1);if(level>=3||coins<cost)return;if(kind==='speed')speedLevel++;else handlingLevel++;coins-=cost;saveGarage();refreshGarage()}
+}
+refreshGarage();applyCar();
+document.querySelectorAll('[data-theme]').forEach(b=>b.onclick=()=>applyTheme(b.dataset.theme));applyTheme(selectedTheme);
+function begin(m){mode=m;if(m==='career')setDifficulty(championship[careerStage].difficulty);active=true;elapsed=0;countdown=3.5;inventory=2;previous=0;player.speed=0;player.lap=0;player.boost=100;place(player,0,-3);bots.forEach((b,i)=>{b.speed=0;b.progress=-(3+i*3);b.lap=0;b.lane=i%2?-3:3;b.stun=0;b.pulse=i*2.1;b.personality=i;place(b,N-3-i*3,b.lane)});document.getElementById('menu').style.display='none';msg.textContent=''}
 document.getElementById('start').onclick=()=>begin('quick');document.getElementById('career').onclick=()=>begin('career');
 const hud=document.getElementById('hud'),msg=document.getElementById('message');
 function nearest(pos){let best=Infinity,idx=0;for(let i=0;i<N;i++){let d=B.Vector3.DistanceSquared(pos,points[i]);if(d<best){best=d;idx=i}}return {idx,dist:Math.sqrt(best)}}
-function finish(){active=false;let rank=1+bots.filter(b=>b.lap*N+b.progress>player.lap*N+nearest(player.root.position).idx).length;let reward=mode==='career'?Math.max(20,120-rank*20):0;coins+=reward;localStorage.setItem('nbr_coins',coins);if(mode==='career')localStorage.setItem('nbr_rookie','complete');document.getElementById('menu').style.display='flex';document.getElementById('progress').textContent='Career coins saved: '+coins;document.querySelector('#menu p').textContent='FINISHED #'+rank+' · '+elapsed.toFixed(1)+'s · +'+reward+' coins';msg.textContent='🏁 FINISH!';setTimeout(()=>msg.textContent='',2400)}
+function finish(){active=false;let rank=1+bots.filter(b=>b.lap*N+b.progress>player.lap*N+nearest(player.root.position).idx).length;let reward=mode==='career'?Math.max(30,120-rank*20):0;
+if(mode==='career'&&rank===1){reward+=championship[careerStage].bonus;careerWins++;careerStage=Math.min(3,careerStage+1);localStorage.setItem('nbr_career_stage',String(careerStage));localStorage.setItem('nbr_career_wins',String(careerWins))}
+coins+=reward;saveGarage();document.getElementById('menu').style.display='flex';refreshGarage();document.querySelector('#menu p').textContent='FINISHED #'+rank+' · '+elapsed.toFixed(1)+'s · +'+reward+' coins';msg.textContent='🏁 FINISH!';setTimeout(()=>msg.textContent='',2400)}
 
 // Lightweight live minimap: yellow player marker and three colored rival markers.
 const mapCanvas=document.createElement('canvas');mapCanvas.width=180;mapCanvas.height=130;
@@ -126,7 +172,7 @@ function drawMinimap(){
     ctx.strokeStyle='#07131c';ctx.lineWidth=1.5;ctx.stroke();
   }
 }
-engine.runRenderLoop(()=>{let dt=Math.min(engine.getDeltaTime()/1000,.04);if(active){if(countdown>0){countdown-=dt;msg.textContent=countdown>1?Math.ceil(countdown):'GO!';if(countdown<=0)msg.textContent=''}else{elapsed+=dt;let turn=(held('a','arrowleft')?-1:0)+(held('d','arrowright')?1:0),accelerate=true,brake=held('s','arrowdown'),drift=held(' '),nitro=held('shift');let target=brake?9:53;player.boost=Math.min(100,player.boost+dt*5);if(nitro&&!brake&&player.boost>0){target=95;player.boost=Math.max(0,player.boost-dt*23);msg.textContent='⚡ NITRO!'}else if(drift&&Math.abs(player.speed)>8){msg.textContent='💨 DRIFT!'}else if(msg.textContent==='⚡ NITRO!'||msg.textContent==='💨 DRIFT!'){msg.textContent=''}player.speed+=(target-player.speed)*Math.min(1,dt*(brake?3.5:1.5));player.root.rotation.y+=turn*dt*(.8+Math.min(Math.abs(player.speed)/42,1)*1.5)*(drift?2.1:1)*Math.sign(player.speed||1);let forward=new B.Vector3(Math.sin(player.root.rotation.y),0,Math.cos(player.root.rotation.y));player.root.position.addInPlace(forward.scale(player.speed*dt));let near=nearest(player.root.position);if(near.dist>15){player.speed*=1-dt*.9;if(near.dist>45){let p=offset(near.idx,0);player.root.position=B.Vector3.Lerp(player.root.position,p,.07)}}if(near.idx<12&&previous>N-16&&player.speed>0){player.lap++;if(player.lap>=3)finish()}previous=near.idx;for(let b of bots){
+engine.runRenderLoop(()=>{let dt=Math.min(engine.getDeltaTime()/1000,.04);if(active){if(countdown>0){countdown-=dt;msg.textContent=countdown>1?Math.ceil(countdown):'GO!';if(countdown<=0)msg.textContent=''}else{elapsed+=dt;let turn=(held('a','arrowleft')?-1:0)+(held('d','arrowright')?1:0),accelerate=true,brake=held('s','arrowdown'),drift=held(' '),nitro=held('shift');let target=(brake?9:53)*(carsCatalog[selectedCar].speed+speedLevel*.045);player.boost=Math.min(100,player.boost+dt*5);if(nitro&&!brake&&player.boost>0){target=95*(carsCatalog[selectedCar].speed+speedLevel*.045);player.boost=Math.max(0,player.boost-dt*23);msg.textContent='⚡ NITRO!'}else if(drift&&Math.abs(player.speed)>8){msg.textContent='💨 DRIFT!'}else if(msg.textContent==='⚡ NITRO!'||msg.textContent==='💨 DRIFT!'){msg.textContent=''}player.speed+=(target-player.speed)*Math.min(1,dt*(brake?3.5:1.5));player.root.rotation.y+=turn*dt*(.8+Math.min(Math.abs(player.speed)/42,1)*1.5)*(drift?2.1:1)*(carsCatalog[selectedCar].handling+handlingLevel*.06)*Math.sign(player.speed||1);let forward=new B.Vector3(Math.sin(player.root.rotation.y),0,Math.cos(player.root.rotation.y));player.root.position.addInPlace(forward.scale(player.speed*dt));let near=nearest(player.root.position);if(near.dist>15){player.speed*=1-dt*.9;if(near.dist>45){let p=offset(near.idx,0);player.root.position=B.Vector3.Lerp(player.root.position,p,.07)}}if(near.idx<12&&previous>N-16&&player.speed>0){player.lap++;if(player.lap>=3)finish()}previous=near.idx;for(let b of bots){
   const i=bots.indexOf(b);
   const playerTotal=player.lap*N+near.idx;
   const botTotal=b.lap*N+b.progress;
