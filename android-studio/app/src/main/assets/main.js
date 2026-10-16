@@ -77,7 +77,17 @@ function renderCarEffects(){
 }
 const pickups=[];for(let i=8;i<N;i+=16){let orb=B.MeshBuilder.CreateTorus('pickup',{diameter:3,thickness:.65},scene);orb.material=mat('pickup mat','#ffe028');orb.position=offset(i,i%3===0?5:-5).add(new B.Vector3(0,2,0));pickups.push({mesh:orb,active:true,cool:0})}
 const keys={};window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))e.preventDefault()});window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
-document.querySelectorAll('[data-key]').forEach(b=>{let k=b.dataset.key.toLowerCase();b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true;b.setPointerCapture(e.pointerId)});for(let ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>keys[k]=false)});
+document.querySelectorAll('[data-key]').forEach(b=>{
+ const k=b.dataset.key.toLowerCase();const pointers=new Set();
+ const press=e=>{e.preventDefault();e.stopPropagation();pointers.add(e.pointerId);keys[k]=true;b.classList.add('pressed');try{b.setPointerCapture(e.pointerId)}catch(_){}};
+ const release=e=>{e.preventDefault();pointers.delete(e.pointerId);if(!pointers.size){keys[k]=false;b.classList.remove('pressed')}};
+ b.addEventListener('pointerdown',press,{passive:false});
+ for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,release,{passive:false});
+ b.addEventListener('contextmenu',e=>e.preventDefault());
+ b.addEventListener('selectstart',e=>e.preventDefault());
+ b.addEventListener('dragstart',e=>e.preventDefault());
+});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){document.querySelectorAll('[data-key]').forEach(b=>b.classList.remove('pressed'));for(const k of ['w','a','s','d','shift','e',' '])keys[k]=false}});
 const difficultySettings={
  easy:{speed:39,spread:1.2,catchup:3,rate:.14},
  normal:{speed:51,spread:2.3,catchup:7,rate:.155},
