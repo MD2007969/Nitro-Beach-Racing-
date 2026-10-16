@@ -13,11 +13,54 @@ for(let i=0;i<N;i++){let a=i*2*Math.PI/N;points.push(new B.Vector3(rx*Math.cos(a
 function tangent(i){return points[(i+1)%N].subtract(points[(i+N-1)%N]).normalize()}
 function offset(i,side){let t=tangent(i);return points[i].add(new B.Vector3(-t.z,0,t.x).scale(side))}
 function ribbon(name,width,material,y=0){let path1=[],path2=[];for(let i=0;i<=N;i++){let k=i%N;path1.push(offset(k,-width/2).add(new B.Vector3(0,y,0)));path2.push(offset(k,width/2).add(new B.Vector3(0,y,0)))}let mesh=B.MeshBuilder.CreateRibbon(name,{pathArray:[path1,path2],sideOrientation:B.Mesh.DOUBLESIDE},scene);mesh.material=material;return mesh}
-ribbon('road',21,road,.02);ribbon('center line',.3,white,.05);
+ribbon('road',21,road,.02);
+const shoulder=mat('warm shoulder','#f3e5bc'),stripe=mat('lane dash','#fff5d4');
+for(let i=0;i<N;i+=4){
+  for(const side of [-1,1]){const p=offset(i,side*10);const t=tangent(i);
+    const line=B.MeshBuilder.CreateBox('edge',{width:.32,height:.08,depth:5.6},scene);
+    line.position=p.add(new B.Vector3(0,.23,0));line.rotation.y=Math.atan2(t.x,t.z);line.material=shoulder;
+  }
+}
+for(let i=0;i<N;i+=8){const p=points[i],t=tangent(i);const dash=B.MeshBuilder.CreateBox('dash',{width:.28,height:.08,depth:7},scene);dash.position=p.add(new B.Vector3(0,.25,0));dash.rotation.y=Math.atan2(t.x,t.z);dash.material=stripe}
+
 for(let i=0;i<85;i++){let k=(i*17)%N,side=i%2?1:-1,p=offset(k,32+((i*13)%55)*side);if(Math.abs(p.x)<80&&Math.abs(p.z)<70)continue;let trunk=B.MeshBuilder.CreateCylinder('palm',{height:7,diameterTop:.6,diameterBottom:1.3,tessellation:6},scene);trunk.position=p.add(new B.Vector3(0,3.5,0));trunk.material=brown;let leaves=B.MeshBuilder.CreateSphere('canopy',{diameter:8,segments:5},scene);leaves.scaling.y=.4;leaves.position=p.add(new B.Vector3(0,8,0));leaves.material=green}
-function car(name,color,index,lane){let root=new B.TransformNode(name,scene),body=B.MeshBuilder.CreateBox(name+' body',{width:3.4,height:1.25,depth:6},scene);body.parent=root;body.position.y=1.3;body.material=mat(name+' paint',color);let top=B.MeshBuilder.CreateBox(name+' cabin',{width:2.5,height:1.1,depth:2.6},scene);top.parent=root;top.position.set(0,2.3,-.4);top.material=mat(name+' glass','#152b43');for(let x of [-1.7,1.7])for(let z of [-2,2]){let wheel=B.MeshBuilder.CreateCylinder('wheel',{diameter:1.5,height:.6,tessellation:12},scene);wheel.parent=root;wheel.rotation.z=Math.PI/2;wheel.position.set(x,.8,z);wheel.material=mat('tire','#14171c')}let c={root,index,lane,speed:0,lap:0,progress:0,boost:0};place(c,index,lane);return c}
+function car(name,color,index,lane){
+ let root=new B.TransformNode(name,scene),paint=mat(name+' paint',color),glass=mat(name+' glass','#142d46'),dark=mat(name+' trim','#161b24'),light=mat(name+' lights','#fff8c7'),tail=mat(name+' taillights','#e32742');
+ function part(label,options,material,x,y,z){let mesh=B.MeshBuilder.CreateBox(name+' '+label,options,scene);mesh.parent=root;mesh.position.set(x,y,z);mesh.material=material;return mesh}
+ part('body',{width:3.5,height:.95,depth:6.4},paint,0,1.25,0);
+ part('front hood',{width:3.2,height:.32,depth:1.75},paint,0,1.78,2.05);
+ part('rear deck',{width:3.25,height:.34,depth:1.35},paint,0,1.78,-2.35);
+ part('cabin',{width:2.65,height:1.15,depth:2.85},glass,0,2.22,-.3);
+ part('roof',{width:2.5,height:.15,depth:1.55},paint,0,2.88,-.58);
+ part('front grille',{width:2.3,height:.33,depth:.12},dark,0,1.22,3.23);
+ part('spoiler',{width:3.8,height:.19,depth:.52},dark,0,2.35,-3.0);
+ for(const x of [-1.32,1.32]){
+  part('headlamp',{width:.72,height:.23,depth:.14},light,x,1.58,3.2);
+  part('taillamp',{width:.73,height:.23,depth:.14},tail,x,1.52,-3.2);
+  part('mirror',{width:.48,height:.28,depth:.46},paint,x*1.16,2.15,.5);
+  for(const z of [-2.12,2.12]){let wheel=B.MeshBuilder.CreateCylinder(name+' wheel',{diameter:1.55,height:.65,tessellation:12},scene);wheel.parent=root;wheel.rotation.z=Math.PI/2;wheel.position.set(x*1.33,.82,z);wheel.material=dark}
+ }
+ const c={root,index,lane,speed:0,lap:0,progress:0,boost:0};place(c,index,lane);return c
+}
 function place(c,index,lane){let p=offset((index+N)%N,lane);c.root.position.set(p.x,.1,p.z);let t=tangent((index+N)%N);c.root.rotation.y=Math.atan2(t.x,t.z)}
 const player=car('YOU','#ff9f18',0,-3),bots=[car('RIVAL 1','#e83e64',N-3,3),car('RIVAL 2','#22bbd2',N-6,-3),car('RIVAL 3','#9b65ee',N-9,3)];camera.lockedTarget=player.root;
+
+const fxBlue=mat('nitro glow','#15b9ff'),fxOrange=mat('nitro core','#ffe2a2'),smokeMat=mat('drift dust','#e9e5d5');
+const flames=[],smoke=[];
+for(const x of [-.85,.85]){
+ let f=B.MeshBuilder.CreateCylinder('nitro flame',{height:2.2,diameterTop:.3,diameterBottom:.8,tessellation:8},scene);
+ f.parent=player.root;f.rotation.x=Math.PI/2;f.position.set(x,.95,-4.0);f.material=fxBlue;f.setEnabled(false);flames.push(f);
+}
+for(const x of [-1.4,1.4]){
+ let puff=B.MeshBuilder.CreateSphere('drift dust',{diameter:1.1,segments:6},scene);
+ puff.parent=player.root;puff.position.set(x,.5,-2.65);puff.material=smokeMat;puff.setEnabled(false);smoke.push(puff)
+}
+function renderCarEffects(){
+ const boost=active&&countdown<=0&&held('shift')&&held('w','arrowup')&&player.boost>0;
+ const drifting=active&&countdown<=0&&held(' ')&&Math.abs(player.speed)>8;
+ flames.forEach((f,i)=>{f.setEnabled(boost);f.scaling.y=1+Math.sin(elapsed*28+i)*.25});
+ smoke.forEach((p,i)=>{p.setEnabled(drifting);p.scaling.set(1.1+Math.abs(Math.sin(elapsed*7+i))*.65,.6,1.3)});
+}
 const pickups=[];for(let i=8;i<N;i+=16){let orb=B.MeshBuilder.CreateTorus('pickup',{diameter:3,thickness:.65},scene);orb.material=mat('pickup mat','#ffe028');orb.position=offset(i,i%3===0?5:-5).add(new B.Vector3(0,2,0));pickups.push({mesh:orb,active:true,cool:0})}
 const keys={};window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))e.preventDefault()});window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 document.querySelectorAll('[data-key]').forEach(b=>{let k=b.dataset.key.toLowerCase();b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true;b.setPointerCapture(e.pointerId)});for(let ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>keys[k]=false)});
@@ -66,4 +109,4 @@ engine.runRenderLoop(()=>{let dt=Math.min(engine.getDeltaTime()/1000,.04);if(act
   b.root.rotation.y=Math.atan2(dir.x,dir.z);
   b.root.position=B.Vector3.Lerp(b.root.position,targetPos,Math.min(1,dt*11));
   if(B.Vector3.Distance(player.root.position,b.root.position)<4)player.speed*=.96;
-}for(let p of pickups){p.mesh.rotation.y+=dt*2;if(!p.active){p.cool-=dt;if(p.cool<=0){p.active=true;p.mesh.setEnabled(true)}}else if(B.Vector3.Distance(player.root.position,p.mesh.position)<4){p.active=false;p.cool=12;p.mesh.setEnabled(false);inventory=Math.min(3,inventory+1);player.boost=Math.min(100,player.boost+25)}}if(held('e')&&inventory>0&&!keys._used){inventory--;msg.textContent='💥 POWER!';setTimeout(()=>{if(msg.textContent==='💥 POWER!')msg.textContent=''},800);player.boost=Math.min(100,player.boost+35);bots.forEach(b=>{if(B.Vector3.Distance(player.root.position,b.root.position)<30)b.stun=2.5});keys._used=true}if(!held('e'))keys._used=false;let rank=1+bots.filter(b=>b.lap*N+b.progress>player.lap*N+near.idx).length;hud.innerHTML='🏁 POSITION '+rank+'/4 &nbsp; LAP '+Math.min(3,player.lap+1)+'/3<br>⚡ '+Math.round(Math.abs(player.speed)*3.6)+' km/h &nbsp; NITRO '+Math.round(player.boost)+'%<br>💥 POWER-UPS '+inventory+' &nbsp; ⏱ '+elapsed.toFixed(1)+'s'}}drawMinimap();scene.render()});window.addEventListener('resize',()=>engine.resize());
+}for(let p of pickups){p.mesh.rotation.y+=dt*2;if(!p.active){p.cool-=dt;if(p.cool<=0){p.active=true;p.mesh.setEnabled(true)}}else if(B.Vector3.Distance(player.root.position,p.mesh.position)<4){p.active=false;p.cool=12;p.mesh.setEnabled(false);inventory=Math.min(3,inventory+1);player.boost=Math.min(100,player.boost+25)}}if(held('e')&&inventory>0&&!keys._used){inventory--;msg.textContent='💥 POWER!';setTimeout(()=>{if(msg.textContent==='💥 POWER!')msg.textContent=''},800);player.boost=Math.min(100,player.boost+35);bots.forEach(b=>{if(B.Vector3.Distance(player.root.position,b.root.position)<30)b.stun=2.5});keys._used=true}if(!held('e'))keys._used=false;let rank=1+bots.filter(b=>b.lap*N+b.progress>player.lap*N+near.idx).length;hud.innerHTML='🏁 POSITION '+rank+'/4 &nbsp; LAP '+Math.min(3,player.lap+1)+'/3<br>⚡ '+Math.round(Math.abs(player.speed)*3.6)+' km/h &nbsp; NITRO '+Math.round(player.boost)+'%<br>💥 POWER-UPS '+inventory+' &nbsp; ⏱ '+elapsed.toFixed(1)+'s'}}renderCarEffects();drawMinimap();scene.render()});window.addEventListener('resize',()=>engine.resize());
