@@ -82,7 +82,7 @@ const difficultySettings={
  easy:{speed:39,spread:1.2,catchup:3,rate:.14},
  normal:{speed:51,spread:2.3,catchup:7,rate:.155},
  hard:{speed:64,spread:3.5,catchup:9,rate:.165},
- expert:{speed:78,spread:4.6,catchup:11,rate:.177}
+ expert:{speed:61,spread:2.8,catchup:5,rate:.155}
 };
 let difficulty=localStorage.getItem('nbr_difficulty')||'normal';
 if(!difficultySettings[difficulty])difficulty='normal';
@@ -126,8 +126,9 @@ engine.runRenderLoop(()=>{let dt=Math.min(engine.getDeltaTime()/1000,.04);if(act
   const catchup=Math.max(-3,Math.min(cfg.catchup,gap*.11));
   // Distinct personalities: sprinter, overtaker, and consistent racer.
   const personalitySpeed=[3.5,0,-1.5][i];
-  const surge=i===0?Math.max(0,Math.sin(elapsed*.33+b.pulse))*5:0;
-  const cruise=cfg.speed+i*cfg.spread+personalitySpeed+catchup+surge+Math.sin(elapsed*.48+b.pulse)*(i===2?1:2.5);
+  const surge=i===0?Math.max(0,Math.sin(elapsed*.33+b.pulse))*3:0;
+  const mistake=(difficulty==='expert'&&Math.sin(elapsed*.24+b.pulse)>0.92)?-7:0;
+  const cruise=cfg.speed+i*cfg.spread+personalitySpeed+catchup+surge+mistake+Math.sin(elapsed*.48+b.pulse)*(i===2?1:2.5);
   b.stun=Math.max(0,(b.stun||0)-dt);
   const desired=b.stun>0?cruise*.3:cruise;
   b.speed+=(desired-b.speed)*Math.min(1,dt*2.1);
