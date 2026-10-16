@@ -3,9 +3,23 @@ const canvas=document.getElementById('game'),engine=new B.Engine(canvas,true,{ad
 const scene=new B.Scene(engine);scene.clearColor=new B.Color4(.48,.78,.95,1);
 const camera=new B.FollowCamera('chase',new B.Vector3(0,12,-22),scene);
 camera.radius=23;camera.heightOffset=10;camera.rotationOffset=180;camera.cameraAcceleration=.065;camera.maxCameraSpeed=60;scene.activeCamera=camera;
-new B.HemisphericLight('sun',new B.Vector3(.3,1,.4),scene).intensity=1.25;
+const sunlight=new B.HemisphericLight('sun',new B.Vector3(.3,1,.4),scene);sunlight.intensity=1.25;
 const mat=(name,color)=>{let m=new B.StandardMaterial(name,scene);m.diffuseColor=B.Color3.FromHexString(color);return m};
 const road=mat('asphalt','#343c47'),sand=mat('sand','#e6c77d'),sea=mat('sea','#128cb1'),white=mat('paint','#f7f1d0'),green=mat('palm','#247a45'),brown=mat('trunk','#80552d');
+const themes={
+ day:{sky:[.48,.78,.95],sand:'#e6c77d',sea:'#128cb1',road:'#343c47',green:'#247a45',light:1.25},
+ sunset:{sky:[.97,.49,.33],sand:'#e7a86b',sea:'#84558b',road:'#493b50',green:'#426348',light:.85},
+ neon:{sky:[.035,.045,.15],sand:'#575078',sea:'#153d77',road:'#22283f',green:'#23566b',light:.62}
+};
+let selectedTheme=localStorage.getItem('nbr_theme')||'day';
+if(!themes[selectedTheme])selectedTheme='day';
+function applyTheme(name){
+ selectedTheme=name;localStorage.setItem('nbr_theme',name);
+ const t=themes[name];scene.clearColor=new B.Color4(...t.sky,1);
+ for(const [m,key] of [[sand,'sand'],[sea,'sea'],[road,'road'],[green,'green']])m.diffuseColor=B.Color3.FromHexString(t[key]);
+ sunlight.intensity=t.light;
+ document.querySelectorAll('[data-theme]').forEach(b=>{b.style.outline=b.dataset.theme===name?'3px solid white':'none';b.setAttribute('aria-pressed',String(b.dataset.theme===name))});
+}
 const ground=B.MeshBuilder.CreateGround('island',{width:1100,height:1100},scene);ground.material=sand;
 const water=B.MeshBuilder.CreateGround('ocean',{width:3000,height:3000},scene);water.position.y=-1.3;water.material=sea;
 const N=160,rx=185,rz=125,points=[];
@@ -65,7 +79,7 @@ const pickups=[];for(let i=8;i<N;i+=16){let orb=B.MeshBuilder.CreateTorus('picku
 const keys={};window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))e.preventDefault()});window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 document.querySelectorAll('[data-key]').forEach(b=>{let k=b.dataset.key.toLowerCase();b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true;b.setPointerCapture(e.pointerId)});for(let ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>keys[k]=false)});
 const held=(...ks)=>ks.some(k=>keys[k]);let active=false,elapsed=0,countdown=0,inventory=0,coins=Number(localStorage.getItem('nbr_coins')||0),mode='quick',previous=0;
-document.getElementById('progress').textContent='Career coins saved: '+coins;
+document.getElementById('progress').textContent='Career coins saved: '+coins;document.querySelectorAll('[data-theme]').forEach(b=>b.onclick=()=>applyTheme(b.dataset.theme));applyTheme(selectedTheme);
 function begin(m){mode=m;active=true;elapsed=0;countdown=3.5;inventory=2;previous=0;player.speed=0;player.lap=0;player.boost=100;place(player,0,-3);bots.forEach((b,i)=>{b.speed=0;b.progress=-(3+i*3);b.lap=0;b.lane=i%2?-3:3;b.stun=0;b.pulse=i*2.1;place(b,N-3-i*3,b.lane)});document.getElementById('menu').style.display='none';msg.textContent=''}
 document.getElementById('start').onclick=()=>begin('quick');document.getElementById('career').onclick=()=>begin('career');
 const hud=document.getElementById('hud'),msg=document.getElementById('message');
