@@ -183,6 +183,29 @@ const championship=[
 ];
 let seriesRound=0,seriesScores=[0,0,0,0],seriesActive=false;
 let seriesHistory=[];
+const careerSaveKey='nbr_championship_v1';
+let lastChampionship=null;
+function saveChampionship(){
+ try{
+  localStorage.setItem(careerSaveKey,JSON.stringify({
+   stage:careerStage,active:seriesActive,round:seriesRound,
+   scores:seriesScores,history:seriesHistory,last:lastChampionship
+  }));
+ }catch(e){console.warn('Championship save unavailable',e)}
+}
+function restoreChampionship(){
+ try{
+  const s=JSON.parse(localStorage.getItem(careerSaveKey)||'null');
+  if(!s||typeof s!=='object')return;
+  if(s.last&&Array.isArray(s.last.scores)&&s.last.scores.length===4)lastChampionship=s.last;
+  if(s.stage!==careerStage||!s.active)return;
+  if(!Number.isInteger(s.round)||s.round<1||s.round>=championship[careerStage].rounds)return;
+  if(!Array.isArray(s.scores)||s.scores.length!==4||!s.scores.every(x=>Number.isInteger(x)&&x>=0))return;
+  if(!Array.isArray(s.history)||s.history.length!==s.round)return;
+  seriesRound=s.round;seriesScores=s.scores.slice();seriesHistory=s.history.slice();seriesActive=true;
+ }catch(e){console.warn('Championship restore skipped',e)}
+}
+restoreChampionship();
 const pointsAwarded=[10,7,5,3];
 function seriesText(){
  if(!seriesActive)return '';
@@ -218,6 +241,10 @@ function refreshGarage(){
  document.getElementById('progress').textContent='🪙 '+coins+' coins · '+careerWins+' career wins';
  document.getElementById('career').textContent=seriesActive?'CONTINUE: '+championship[careerStage].name+' '+(seriesRound+1)+'/'+championship[careerStage].rounds:'CAREER: '+championship[careerStage].name;
  document.getElementById('careerRules').textContent=championship[careerStage].rule;
+ const record=document.getElementById('championshipRecord');
+ if(record)record.textContent=seriesActive
+  ?'💾 SAVED SERIES · '+championship[careerStage].name+' · Next race '+(seriesRound+1)+'/'+championship[careerStage].rounds+' · YOU '+seriesScores[0]+' pts'
+  :lastChampionship?'🏆 LAST SERIES · '+lastChampionship.name+' · '+(lastChampionship.champion?'WIN':'LOSS')+' · YOU '+lastChampionship.scores[0]+' pts':'';
  document.getElementById('seriesStandings').textContent=seriesActive?'🏆 '+seriesText()+' (YOU / RIVAL 1 / RIVAL 2 / RIVAL 3)':'';
 }
 document.getElementById('garageOpen').onclick=()=>{refreshGarage();document.getElementById('garage').style.display='flex'};
@@ -232,7 +259,7 @@ function begin(m){
  mode=m;
  if(m==='career'){
   setDifficulty(championship[careerStage].difficulty);
-  if(!seriesActive){seriesRound=0;seriesScores=[0,0,0,0];seriesHistory=[];seriesActive=true}
+  if(!seriesActive){seriesRound=0;seriesScores=[0,0,0,0];seriesHistory=[];seriesActive=true;saveChampionship()}
  }
  active=true;elapsed=0;countdown=3.5;inventory=2;previous=0;player.speed=0;player.lap=0;player.boost=100;place(player,0,-3);bots.forEach((b,i)=>{b.speed=0;b.progress=-(3+i*3);b.lap=0;b.lane=i%2?-3:3;b.stun=0;b.pulse=i*2.1;b.personality=i;b.finishTime=null;place(b,N-3-i*3,b.lane)});document.getElementById('menu').style.display='none';msg.textContent=''}
 document.getElementById('start').onclick=()=>begin('quick');document.getElementById('career').onclick=()=>begin('career');
@@ -262,7 +289,7 @@ function finish(){
  if(mode==='career'){
   const cup=championship[careerStage];
   competitors.forEach((x,i)=>seriesScores[x.id]+=pointsAwarded[i]);
-  seriesHistory.push({round:seriesRound+1,order:competitors.map(x=>x.id),points:seriesScores.slice()});
+  seriesHistory.push({round:seriesRound+1,order:competitors.map(x=>x.id),points:seriesScores.slice(),playerTime:Number(elapsed.toFixed(2))});
   seriesRound++;
   const scoreLine=' · POINTS YOU '+seriesScores[0]+' / RIVALS '+seriesScores.slice(1).join(', ');
   const finalScores=seriesScores.slice();
@@ -275,10 +302,13 @@ function finish(){
     localStorage.setItem('nbr_career_wins',String(careerWins));
    }
    result=(champion?'🏆 CHAMPION! ':'CHAMPIONSHIP LOST · RETRY ') +cup.name+scoreLine;
+   lastChampionship={name:cup.name,champion,scores:seriesScores.slice(),history:seriesHistory.slice(),completedAt:new Date().toISOString()};
    seriesActive=false;seriesRound=0;seriesScores=[0,0,0,0];
   }else result='RACE '+seriesRound+'/'+cup.rounds+' · POSITION #'+rank+scoreLine+' · Next race ready!';
+  saveChampionship();
  }
  coins+=reward;saveGarage();
+ if(mode==='career')saveChampionship();
  document.getElementById('menu').style.display='none';
  refreshGarage();refreshMaps();
  document.querySelector('#menu p').textContent=result+' · +'+reward+' coins';
