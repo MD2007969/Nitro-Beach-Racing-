@@ -18,12 +18,40 @@ function applyTheme(name){
  const t=themes[name];scene.clearColor=new B.Color4(...t.sky,1);
  for(const [m,key] of [[sand,'sand'],[sea,'sea'],[road,'road'],[green,'green']])m.diffuseColor=B.Color3.FromHexString(t[key]);
  sunlight.intensity=t.light;
+ if(selectedMap!==0){const mc=mapColors[selectedMap];sand.diffuseColor=B.Color3.FromHexString(mc.sand);sea.diffuseColor=B.Color3.FromHexString(mc.sea);green.diffuseColor=B.Color3.FromHexString(mc.green);road.diffuseColor=B.Color3.FromHexString(mc.road)}
  document.querySelectorAll('[data-theme]').forEach(b=>{b.style.outline=b.dataset.theme===name?'3px solid white':'none';b.setAttribute('aria-pressed',String(b.dataset.theme===name))});
 }
 const ground=B.MeshBuilder.CreateGround('island',{width:1100,height:1100},scene);ground.material=sand;
 const water=B.MeshBuilder.CreateGround('ocean',{width:3000,height:3000},scene);water.position.y=-1.3;water.material=sea;
+const mapCatalog=[
+ {name:'Tropical Paradise',unlock:0,desc:'Palm-lined coastal circuit'},
+ {name:'Neon City',unlock:0,desc:'Bright city skyline'},
+ {name:'Desert Rush',unlock:1,desc:'Sand dunes and rocky roads'},
+ {name:'Mountain Fury',unlock:2,desc:'Highland forest and sharp bends'},
+ {name:'Coastal Highway',unlock:3,desc:'Open ocean and bridge views'}
+];
+let selectedMap=Math.max(0,Math.min(4,Number(localStorage.getItem('nbr_map')||0)));
+const unlockedStage=Math.max(0,Math.min(3,Number(localStorage.getItem('nbr_career_stage')||0)));
+if(mapCatalog[selectedMap].unlock>unlockedStage)selectedMap=0;
 const N=160,rx=185,rz=125,points=[];
-for(let i=0;i<N;i++){let a=i*2*Math.PI/N;points.push(new B.Vector3(rx*Math.cos(a)+19*Math.sin(3*a),.16,rz*Math.sin(a)+12*Math.sin(2*a)))}
+for(let i=0;i<N;i++){
+ let a=i*2*Math.PI/N,x,z;
+ if(selectedMap===1){x=188*Math.cos(a)+26*Math.sin(4*a);z=112*Math.sin(a)+24*Math.sin(3*a)}
+ else if(selectedMap===2){x=200*Math.cos(a)+33*Math.sin(3*a);z=127*Math.sin(a)+23*Math.cos(5*a)}
+ else if(selectedMap===3){x=170*Math.cos(a)+38*Math.sin(5*a);z=135*Math.sin(a)+21*Math.sin(4*a)}
+ else if(selectedMap===4){x=210*Math.cos(a)+28*Math.sin(2*a);z=110*Math.sin(a)+28*Math.cos(3*a)}
+ else{x=rx*Math.cos(a)+19*Math.sin(3*a);z=rz*Math.sin(a)+12*Math.sin(2*a)}
+ points.push(new B.Vector3(x,.16,z))
+}
+const mapColors=[
+ {sand:'#e6c77d',sea:'#128cb1',green:'#247a45',road:'#343c47'},
+ {sand:'#35465e',sea:'#1a2e4f',green:'#4f86a4',road:'#292c40'},
+ {sand:'#ce9c61',sea:'#ba8255',green:'#957343',road:'#554b47'},
+ {sand:'#73936f',sea:'#42728a',green:'#255b40',road:'#3a4248'},
+ {sand:'#e9cf9a',sea:'#1286a9',green:'#367b5c',road:'#384652'}
+];
+if(selectedMap!==0){const mc=mapColors[selectedMap];sand.diffuseColor=B.Color3.FromHexString(mc.sand);sea.diffuseColor=B.Color3.FromHexString(mc.sea);green.diffuseColor=B.Color3.FromHexString(mc.green);road.diffuseColor=B.Color3.FromHexString(mc.road)}
+
 function tangent(i){return points[(i+1)%N].subtract(points[(i+N-1)%N]).normalize()}
 function offset(i,side){let t=tangent(i);return points[i].add(new B.Vector3(-t.z,0,t.x).scale(side))}
 function ribbon(name,width,material,y=0){let path1=[],path2=[];for(let i=0;i<=N;i++){let k=i%N;path1.push(offset(k,-width/2).add(new B.Vector3(0,y,0)));path2.push(offset(k,width/2).add(new B.Vector3(0,y,0)))}let mesh=B.MeshBuilder.CreateRibbon(name,{pathArray:[path1,path2],sideOrientation:B.Mesh.DOUBLESIDE},scene);mesh.material=material;return mesh}
@@ -38,6 +66,25 @@ for(let i=0;i<N;i+=4){
 for(let i=0;i<N;i+=8){const p=points[i],t=tangent(i);const dash=B.MeshBuilder.CreateBox('dash',{width:.28,height:.08,depth:7},scene);dash.position=p.add(new B.Vector3(0,.25,0));dash.rotation.y=Math.atan2(t.x,t.z);dash.material=stripe}
 
 for(let i=0;i<85;i++){let k=(i*17)%N,side=i%2?1:-1,p=offset(k,32+((i*13)%55)*side);if(Math.abs(p.x)<80&&Math.abs(p.z)<70)continue;let trunk=B.MeshBuilder.CreateCylinder('palm',{height:7,diameterTop:.6,diameterBottom:1.3,tessellation:6},scene);trunk.position=p.add(new B.Vector3(0,3.5,0));trunk.material=brown;let leaves=B.MeshBuilder.CreateSphere('canopy',{diameter:8,segments:5},scene);leaves.scaling.y=.4;leaves.position=p.add(new B.Vector3(0,8,0));leaves.material=green}
+if(selectedMap!==0){
+ const accent=mat('map accent',selectedMap===1?'#48c7e9':selectedMap===2?'#a67c52':selectedMap===3?'#345b40':'#a1d3d9');
+ for(let i=0;i<35;i++){
+  const k=(i*11)%N,p=offset(k,44+(i%4)*14*(i%2?1:-1));
+  if(selectedMap===1){
+   const tower=B.MeshBuilder.CreateBox('city tower',{width:9+(i%3)*5,height:20+(i%6)*9,depth:10},scene);
+   tower.position.set(p.x,12+(i%6)*4.5,p.z);tower.material=accent;
+  }else if(selectedMap===2){
+   const rock=B.MeshBuilder.CreateSphere('desert rock',{diameter:9+(i%5)*3,segments:5},scene);
+   rock.scaling.y=.55;rock.position.set(p.x,2,p.z);rock.material=accent;
+  }else if(selectedMap===3){
+   const peak=B.MeshBuilder.CreateCylinder('mountain peak',{diameterBottom:22,diameterTop:0,height:24+(i%4)*8,tessellation:5},scene);
+   peak.position.set(p.x,10+(i%4)*4,p.z);peak.material=accent;
+  }else{
+   const post=B.MeshBuilder.CreateCylinder('coastal pillar',{diameter:3,height:10,tessellation:6},scene);
+   post.position.set(p.x,4,p.z);post.material=accent;
+  }
+ }
+}
 function car(name,color,index,lane){
  let root=new B.TransformNode(name,scene),paint=mat(name+' paint',color),glass=mat(name+' glass','#142d46'),dark=mat(name+' trim','#161b24'),light=mat(name+' lights','#fff8c7'),tail=mat(name+' taillights','#e32742');
  function part(label,options,material,x,y,z){let mesh=B.MeshBuilder.CreateBox(name+' '+label,options,scene);mesh.parent=root;mesh.position.set(x,y,z);mesh.material=material;return mesh}
@@ -132,6 +179,18 @@ function saveGarage(){
  localStorage.setItem('nbr_coins',String(coins));
 }
 function applyCar(){const spec=carsCatalog[selectedCar];player.root.getChildMeshes().forEach(m=>{if(m.name==='YOU body'||m.name==='YOU front hood'||m.name==='YOU rear deck'||m.name==='YOU roof'||m.name==='YOU mirror')m.material.diffuseColor=B.Color3.FromHexString(spec.color)})}
+function refreshMaps(){
+ const el=document.getElementById('mapOptions');
+ if(!el)return;
+ el.innerHTML=mapCatalog.map((m,i)=>'<button data-map="'+i+'" style="margin:3px;background:'+(selectedMap===i?'#35a86c':'#263e57')+';color:white;border:1px solid #8ca4ba">'+(m.unlock>careerStage?'🔒 ':'')+m.name+'</button>').join('');
+ document.getElementById('mapDescription').textContent=mapCatalog[selectedMap].desc+' · '+(selectedMap<2?'Available immediately':'Career stage '+(mapCatalog[selectedMap].unlock+1));
+ document.querySelectorAll('[data-map]').forEach(b=>b.onclick=()=>{
+  const i=Number(b.dataset.map);
+  if(mapCatalog[i].unlock>careerStage){document.getElementById('mapDescription').textContent='🔒 Win more Career championships to unlock '+mapCatalog[i].name;return}
+  if(selectedMap===i)return;
+  localStorage.setItem('nbr_map',String(i));location.reload()
+ });
+}
 function refreshGarage(){
  document.getElementById('garageCoins').textContent='🪙 '+coins+' coins';
  document.getElementById('garageCars').innerHTML=carsCatalog.map((spec,i)=>'<button data-car="'+i+'" style="background:'+(selectedCar===i?'#35a86c':'#263e57')+';color:white;margin:4px;border:1px solid #8ca4ba">'+spec.name+' · '+(ownedCars.includes(i)?selectedCar===i?'SELECTED':'OWNED':spec.price+' coins')+'</button>').join('');
@@ -147,7 +206,7 @@ document.getElementById('garageClose').onclick=()=>document.getElementById('gara
 for(const [id,kind] of [['upgradeSpeed','speed'],['upgradeHandling','handling']]){
  document.getElementById(id).onclick=()=>{const level=kind==='speed'?speedLevel:handlingLevel,cost=100*(level+1);if(level>=3||coins<cost)return;if(kind==='speed')speedLevel++;else handlingLevel++;coins-=cost;saveGarage();refreshGarage()}
 }
-refreshGarage();applyCar();
+refreshGarage();refreshMaps();applyCar();
 document.querySelectorAll('[data-theme]').forEach(b=>b.onclick=()=>applyTheme(b.dataset.theme));applyTheme(selectedTheme);
 function begin(m){mode=m;if(m==='career')setDifficulty(championship[careerStage].difficulty);active=true;elapsed=0;countdown=3.5;inventory=2;previous=0;player.speed=0;player.lap=0;player.boost=100;place(player,0,-3);bots.forEach((b,i)=>{b.speed=0;b.progress=-(3+i*3);b.lap=0;b.lane=i%2?-3:3;b.stun=0;b.pulse=i*2.1;b.personality=i;place(b,N-3-i*3,b.lane)});document.getElementById('menu').style.display='none';msg.textContent=''}
 document.getElementById('start').onclick=()=>begin('quick');document.getElementById('career').onclick=()=>begin('career');
@@ -155,7 +214,7 @@ const hud=document.getElementById('hud'),msg=document.getElementById('message');
 function nearest(pos){let best=Infinity,idx=0;for(let i=0;i<N;i++){let d=B.Vector3.DistanceSquared(pos,points[i]);if(d<best){best=d;idx=i}}return {idx,dist:Math.sqrt(best)}}
 function finish(){active=false;let rank=1+bots.filter(b=>b.lap*N+b.progress>player.lap*N+nearest(player.root.position).idx).length;let reward=mode==='career'?Math.max(30,120-rank*20):0;
 if(mode==='career'&&rank===1){reward+=championship[careerStage].bonus;careerWins++;careerStage=Math.min(3,careerStage+1);localStorage.setItem('nbr_career_stage',String(careerStage));localStorage.setItem('nbr_career_wins',String(careerWins))}
-coins+=reward;saveGarage();document.getElementById('menu').style.display='flex';refreshGarage();document.querySelector('#menu p').textContent='FINISHED #'+rank+' · '+elapsed.toFixed(1)+'s · +'+reward+' coins';msg.textContent='🏁 FINISH!';setTimeout(()=>msg.textContent='',2400)}
+coins+=reward;saveGarage();document.getElementById('menu').style.display='flex';refreshGarage();refreshMaps();document.querySelector('#menu p').textContent='FINISHED #'+rank+' · '+elapsed.toFixed(1)+'s · +'+reward+' coins';msg.textContent='🏁 FINISH!';setTimeout(()=>msg.textContent='',2400)}
 
 // Lightweight live minimap: yellow player marker and three colored rival markers.
 const mapCanvas=document.createElement('canvas');mapCanvas.width=180;mapCanvas.height=130;
