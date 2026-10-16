@@ -102,25 +102,27 @@ function drawMinimap(){
   }
 }
 engine.runRenderLoop(()=>{let dt=Math.min(engine.getDeltaTime()/1000,.04);if(active){if(countdown>0){countdown-=dt;msg.textContent=countdown>1?Math.ceil(countdown):'GO!';if(countdown<=0)msg.textContent=''}else{elapsed+=dt;let turn=(held('a','arrowleft')?-1:0)+(held('d','arrowright')?1:0),accelerate=held('w','arrowup'),brake=held('s','arrowdown'),drift=held(' '),nitro=held('shift');let target=accelerate?53:brake?-13:0;player.boost=Math.min(100,player.boost+dt*5);if(nitro&&accelerate&&player.boost>0){target=95;player.boost=Math.max(0,player.boost-dt*23);msg.textContent='⚡ NITRO!'}else if(drift&&Math.abs(player.speed)>8){msg.textContent='💨 DRIFT!'}else if(msg.textContent==='⚡ NITRO!'||msg.textContent==='💨 DRIFT!'){msg.textContent=''}player.speed+=(target-player.speed)*Math.min(1,dt*(accelerate?1.5:2));player.root.rotation.y+=turn*dt*(.8+Math.min(Math.abs(player.speed)/42,1)*1.5)*(drift?2.1:1)*Math.sign(player.speed||1);let forward=new B.Vector3(Math.sin(player.root.rotation.y),0,Math.cos(player.root.rotation.y));player.root.position.addInPlace(forward.scale(player.speed*dt));let near=nearest(player.root.position);if(near.dist>15){player.speed*=1-dt*.9;if(near.dist>45){let p=offset(near.idx,0);player.root.position=B.Vector3.Lerp(player.root.position,p,.07)}}if(near.idx<12&&previous>N-16&&player.speed>0){player.lap++;if(player.lap>=3)finish()}previous=near.idx;for(let b of bots){
-  const i=bots.indexOf(b), playerTotal=player.lap*N+near.idx, botTotal=b.lap*N+b.progress;
+  const i=bots.indexOf(b);
+  const playerTotal=player.lap*N+near.idx;
+  const botTotal=b.lap*N+b.progress;
   const gap=playerTotal-botTotal;
-  const catchup=Math.max(-7,Math.min(14,gap*.26));
-  const cruise=42+i*2.4+catchup+Math.sin(elapsed*.42+b.pulse)*3.5;
+  // Faster opponents with restrained catch-up: rivals can lead, but never teleport.
+  const catchup=Math.max(-4,Math.min(9,gap*.13));
+  const cruise=53+i*2.6+catchup+Math.sin(elapsed*.48+b.pulse)*2.5;
   b.stun=Math.max(0,(b.stun||0)-dt);
-  const desired=b.stun>0?cruise*.35:cruise;
-  b.speed+=(desired-b.speed)*Math.min(1,dt*1.9);
-  const oldProgress=b.progress;
-  b.progress+=dt*b.speed*.13;
+  const desired=b.stun>0?cruise*.3:cruise;
+  b.speed+=(desired-b.speed)*Math.min(1,dt*2.1);
+  b.progress+=dt*b.speed*.155;
   if(b.progress>=N){b.progress-=N;b.lap++}
-  if(b.progress<0){const k=((b.progress%N)+N)%N;b.root.position.copyFrom(offset(Math.floor(k),b.lane))}
   const k=((Math.floor(b.progress)%N)+N)%N;
   const fraction=((b.progress%1)+1)%1;
   const next=(k+1)%N;
-  const sideShift=Math.sin(elapsed*.7+b.pulse)*1.4;
-  const p0=offset(k,b.lane+sideShift),p1=offset(next,b.lane+sideShift);
+  // Lane changes create overtakes and prevent opponents forming a single-file train.
+  const laneTarget=b.lane+Math.sin(elapsed*.35+b.pulse)*2.4;
+  const p0=offset(k,laneTarget),p1=offset(next,laneTarget);
   const targetPos=B.Vector3.Lerp(p0,p1,fraction);
   const dir=p1.subtract(p0);
   b.root.rotation.y=Math.atan2(dir.x,dir.z);
-  b.root.position=B.Vector3.Lerp(b.root.position,targetPos,Math.min(1,dt*11));
-  if(B.Vector3.Distance(player.root.position,b.root.position)<4)player.speed*=.96;
+  b.root.position=B.Vector3.Lerp(b.root.position,targetPos,Math.min(1,dt*12));
+  if(B.Vector3.Distance(player.root.position,b.root.position)<4)player.speed*=.965;
 }for(let p of pickups){p.mesh.rotation.y+=dt*2;if(!p.active){p.cool-=dt;if(p.cool<=0){p.active=true;p.mesh.setEnabled(true)}}else if(B.Vector3.Distance(player.root.position,p.mesh.position)<4){p.active=false;p.cool=12;p.mesh.setEnabled(false);inventory=Math.min(3,inventory+1);player.boost=Math.min(100,player.boost+25)}}if(held('e')&&inventory>0&&!keys._used){inventory--;msg.textContent='💥 POWER!';setTimeout(()=>{if(msg.textContent==='💥 POWER!')msg.textContent=''},800);player.boost=Math.min(100,player.boost+35);bots.forEach(b=>{if(B.Vector3.Distance(player.root.position,b.root.position)<30)b.stun=2.5});keys._used=true}if(!held('e'))keys._used=false;let rank=1+bots.filter(b=>b.lap*N+b.progress>player.lap*N+near.idx).length;hud.innerHTML='🏁 POSITION '+rank+'/4 &nbsp; LAP '+Math.min(3,player.lap+1)+'/3<br>⚡ '+Math.round(Math.abs(player.speed)*3.6)+' km/h &nbsp; NITRO '+Math.round(player.boost)+'%<br>💥 POWER-UPS '+inventory+' &nbsp; ⏱ '+elapsed.toFixed(1)+'s'}}renderCarEffects();drawMinimap();scene.render()});window.addEventListener('resize',()=>engine.resize());
