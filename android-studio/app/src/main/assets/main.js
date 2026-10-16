@@ -321,7 +321,7 @@ window.addEventListener('keydown',e=>{if(e.key==='Escape'&&active){e.preventDefa
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&active&&!paused)setPaused(true)});
 function begin(m){
  document.getElementById('results').style.display='none';
- paused=false;clearControls();audioReady();
+ paused=false;clearControls();
  document.getElementById('pauseMenu').style.display='none';
  document.getElementById('pauseButton').style.display='block';
  document.getElementById('touch').style.display='flex';
@@ -357,13 +357,14 @@ function finish(){
  const rank=competitors.findIndex(x=>x.id===0)+1;
  let reward=mode==='career'?Math.max(30,120-rank*20):0;
  let result='FINISHED #'+rank+' · '+elapsed.toFixed(1)+'s';
+ const finalScores=mode==='career'?seriesScores.slice():[0,0,0,0];
  if(mode==='career'){
   const cup=championship[careerStage];
   competitors.forEach((x,i)=>seriesScores[x.id]+=pointsAwarded[i]);
   seriesHistory.push({round:seriesRound+1,order:competitors.map(x=>x.id),points:seriesScores.slice(),playerTime:Number(elapsed.toFixed(2))});
   seriesRound++;
   const scoreLine=' · POINTS YOU '+seriesScores[0]+' / RIVALS '+seriesScores.slice(1).join(', ');
-  const finalScores=seriesScores.slice();
+  finalScores.splice(0,4,...seriesScores);
   if(seriesRound>=cup.rounds){
    const champion=seriesScores.every((score,i)=>i===0||seriesScores[0]>score);
    if(champion){
