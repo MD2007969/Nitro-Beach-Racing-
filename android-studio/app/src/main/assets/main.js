@@ -78,9 +78,24 @@ function renderCarEffects(){
 const pickups=[];for(let i=8;i<N;i+=16){let orb=B.MeshBuilder.CreateTorus('pickup',{diameter:3,thickness:.65},scene);orb.material=mat('pickup mat','#ffe028');orb.position=offset(i,i%3===0?5:-5).add(new B.Vector3(0,2,0));pickups.push({mesh:orb,active:true,cool:0})}
 const keys={};window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))e.preventDefault()});window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 document.querySelectorAll('[data-key]').forEach(b=>{let k=b.dataset.key.toLowerCase();b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true;b.setPointerCapture(e.pointerId)});for(let ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>keys[k]=false)});
+const difficultySettings={
+ easy:{speed:39,spread:1.2,catchup:3,rate:.14},
+ normal:{speed:51,spread:2.3,catchup:7,rate:.155},
+ hard:{speed:64,spread:3.5,catchup:9,rate:.165},
+ expert:{speed:78,spread:4.6,catchup:11,rate:.177}
+};
+let difficulty=localStorage.getItem('nbr_difficulty')||'normal';
+if(!difficultySettings[difficulty])difficulty='normal';
+function setDifficulty(value){
+ if(!difficultySettings[value])return;
+ difficulty=value;localStorage.setItem('nbr_difficulty',value);
+ document.querySelectorAll('[data-difficulty]').forEach(b=>{const selected=b.dataset.difficulty===value;b.style.outline=selected?'3px solid white':'none';b.setAttribute('aria-pressed',String(selected))});
+}
+document.querySelectorAll('[data-difficulty]').forEach(b=>b.onclick=()=>setDifficulty(b.dataset.difficulty));
+setDifficulty(difficulty);
 const held=(...ks)=>ks.some(k=>keys[k]);let active=false,elapsed=0,countdown=0,inventory=0,coins=Number(localStorage.getItem('nbr_coins')||0),mode='quick',previous=0;
 document.getElementById('progress').textContent='Career coins saved: '+coins;document.querySelectorAll('[data-theme]').forEach(b=>b.onclick=()=>applyTheme(b.dataset.theme));applyTheme(selectedTheme);
-function begin(m){mode=m;active=true;elapsed=0;countdown=3.5;inventory=2;previous=0;player.speed=0;player.lap=0;player.boost=100;place(player,0,-3);bots.forEach((b,i)=>{b.speed=0;b.progress=-(3+i*3);b.lap=0;b.lane=i%2?-3:3;b.stun=0;b.pulse=i*2.1;place(b,N-3-i*3,b.lane)});document.getElementById('menu').style.display='none';msg.textContent=''}
+function begin(m){mode=m;active=true;elapsed=0;countdown=3.5;inventory=2;previous=0;player.speed=0;player.lap=0;player.boost=100;place(player,0,-3);bots.forEach((b,i)=>{b.speed=0;b.progress=-(3+i*3);b.lap=0;b.lane=i%2?-3:3;b.stun=0;b.pulse=i*2.1;b.personality=i;place(b,N-3-i*3,b.lane)});document.getElementById('menu').style.display='none';msg.textContent=''}
 document.getElementById('start').onclick=()=>begin('quick');document.getElementById('career').onclick=()=>begin('career');
 const hud=document.getElementById('hud'),msg=document.getElementById('message');
 function nearest(pos){let best=Infinity,idx=0;for(let i=0;i<N;i++){let d=B.Vector3.DistanceSquared(pos,points[i]);if(d<best){best=d;idx=i}}return {idx,dist:Math.sqrt(best)}}
@@ -107,22 +122,26 @@ engine.runRenderLoop(()=>{let dt=Math.min(engine.getDeltaTime()/1000,.04);if(act
   const botTotal=b.lap*N+b.progress;
   const gap=playerTotal-botTotal;
   // Faster opponents with restrained catch-up: rivals can lead, but never teleport.
-  const catchup=Math.max(-4,Math.min(9,gap*.13));
-  const cruise=53+i*2.6+catchup+Math.sin(elapsed*.48+b.pulse)*2.5;
+  const cfg=difficultySettings[difficulty];
+  const catchup=Math.max(-3,Math.min(cfg.catchup,gap*.11));
+  // Distinct personalities: sprinter, overtaker, and consistent racer.
+  const personalitySpeed=[3.5,0,-1.5][i];
+  const surge=i===0?Math.max(0,Math.sin(elapsed*.33+b.pulse))*5:0;
+  const cruise=cfg.speed+i*cfg.spread+personalitySpeed+catchup+surge+Math.sin(elapsed*.48+b.pulse)*(i===2?1:2.5);
   b.stun=Math.max(0,(b.stun||0)-dt);
   const desired=b.stun>0?cruise*.3:cruise;
   b.speed+=(desired-b.speed)*Math.min(1,dt*2.1);
-  b.progress+=dt*b.speed*.155;
+  b.progress+=dt*b.speed*cfg.rate;
   if(b.progress>=N){b.progress-=N;b.lap++}
   const k=((Math.floor(b.progress)%N)+N)%N;
   const fraction=((b.progress%1)+1)%1;
   const next=(k+1)%N;
   // Lane changes create overtakes and prevent opponents forming a single-file train.
-  const laneTarget=b.lane+Math.sin(elapsed*.35+b.pulse)*2.4;
+  const laneTarget=b.lane+Math.sin(elapsed*(i===1?.63:.35)+b.pulse)*(i===1?3.3:1.7);
   const p0=offset(k,laneTarget),p1=offset(next,laneTarget);
   const targetPos=B.Vector3.Lerp(p0,p1,fraction);
   const dir=p1.subtract(p0);
   b.root.rotation.y=Math.atan2(dir.x,dir.z);
   b.root.position=B.Vector3.Lerp(b.root.position,targetPos,Math.min(1,dt*12));
   if(B.Vector3.Distance(player.root.position,b.root.position)<4)player.speed*=.965;
-}for(let p of pickups){p.mesh.rotation.y+=dt*2;if(!p.active){p.cool-=dt;if(p.cool<=0){p.active=true;p.mesh.setEnabled(true)}}else if(B.Vector3.Distance(player.root.position,p.mesh.position)<4){p.active=false;p.cool=12;p.mesh.setEnabled(false);inventory=Math.min(3,inventory+1);player.boost=Math.min(100,player.boost+25)}}if(held('e')&&inventory>0&&!keys._used){inventory--;msg.textContent='💥 POWER!';setTimeout(()=>{if(msg.textContent==='💥 POWER!')msg.textContent=''},800);player.boost=Math.min(100,player.boost+35);bots.forEach(b=>{if(B.Vector3.Distance(player.root.position,b.root.position)<30)b.stun=2.5});keys._used=true}if(!held('e'))keys._used=false;let rank=1+bots.filter(b=>b.lap*N+b.progress>player.lap*N+near.idx).length;hud.innerHTML='🏁 POSITION '+rank+'/4 &nbsp; LAP '+Math.min(3,player.lap+1)+'/3<br>⚡ '+Math.round(Math.abs(player.speed)*3.6)+' km/h &nbsp; NITRO '+Math.round(player.boost)+'%<br>💥 POWER-UPS '+inventory+' &nbsp; ⏱ '+elapsed.toFixed(1)+'s'}}renderCarEffects();drawMinimap();scene.render()});window.addEventListener('resize',()=>engine.resize());
+}for(let p of pickups){p.mesh.rotation.y+=dt*2;if(!p.active){p.cool-=dt;if(p.cool<=0){p.active=true;p.mesh.setEnabled(true)}}else if(B.Vector3.Distance(player.root.position,p.mesh.position)<4){p.active=false;p.cool=12;p.mesh.setEnabled(false);inventory=Math.min(3,inventory+1);player.boost=Math.min(100,player.boost+25)}}if(held('e')&&inventory>0&&!keys._used){inventory--;msg.textContent='💥 POWER!';setTimeout(()=>{if(msg.textContent==='💥 POWER!')msg.textContent=''},800);player.boost=Math.min(100,player.boost+35);bots.forEach(b=>{if(B.Vector3.Distance(player.root.position,b.root.position)<30)b.stun=2.5});keys._used=true}if(!held('e'))keys._used=false;let rank=1+bots.filter(b=>b.lap*N+b.progress>player.lap*N+near.idx).length;hud.innerHTML='🏁 '+difficulty.toUpperCase()+' · POSITION '+rank+'/4 &nbsp; LAP '+Math.min(3,player.lap+1)+'/3<br>⚡ '+Math.round(Math.abs(player.speed)*3.6)+' km/h &nbsp; NITRO '+Math.round(player.boost)+'%<br>💥 POWER-UPS '+inventory+' &nbsp; ⏱ '+elapsed.toFixed(1)+'s'}}renderCarEffects();drawMinimap();scene.render()});window.addEventListener('resize',()=>engine.resize());
