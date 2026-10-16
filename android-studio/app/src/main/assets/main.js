@@ -275,7 +275,8 @@ function beep(frequency=500,duration=.12,volume=.055,type='sine'){
  }catch(e){}
 }
 function engineAudio(){
- if(!audioReady()||!active||paused||countdown>0){if(engineGain&&audioCtx)engineGain.gain.setTargetAtTime(0,audioCtx.currentTime,.06);return}
+ if(!soundEnabled||!active||paused||countdown>0){if(engineGain&&audioCtx)engineGain.gain.setTargetAtTime(0,audioCtx.currentTime,.06);return}
+ if(!audioReady())return;
  try{
   if(!engineOsc){
    engineOsc=audioCtx.createOscillator();engineGain=audioCtx.createGain();
