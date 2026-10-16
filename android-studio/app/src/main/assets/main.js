@@ -65,11 +65,21 @@ for(let i=0;i<N;i+=4){
 }
 for(let i=0;i<N;i+=8){const p=points[i],t=tangent(i);const dash=B.MeshBuilder.CreateBox('dash',{width:.28,height:.08,depth:7},scene);dash.position=p.add(new B.Vector3(0,.25,0));dash.rotation.y=Math.atan2(t.x,t.z);dash.material=stripe}
 
-for(let i=0;i<85;i++){let k=(i*17)%N,side=i%2?1:-1,p=offset(k,32+((i*13)%55)*side);if(Math.abs(p.x)<80&&Math.abs(p.z)<70)continue;let trunk=B.MeshBuilder.CreateCylinder('palm',{height:7,diameterTop:.6,diameterBottom:1.3,tessellation:6},scene);trunk.position=p.add(new B.Vector3(0,3.5,0));trunk.material=brown;let leaves=B.MeshBuilder.CreateSphere('canopy',{diameter:8,segments:5},scene);leaves.scaling.y=.4;leaves.position=p.add(new B.Vector3(0,8,0));leaves.material=green}
+function clearOfTrack(position,objectRadius=0){
+ const clearance=19+objectRadius;
+ for(const q of points){const dx=position.x-q.x,dz=position.z-q.z;if(dx*dx+dz*dz<clearance*clearance)return false}
+ return true;
+}
+for(let i=0;i<85;i++){
+ const k=(i*17)%N,side=i%2?1:-1,p=offset(k,side*(44+((i*13)%55)));
+ if(!clearOfTrack(p,5))continue;
+ if(Math.abs(p.x)<80&&Math.abs(p.z)<70)continue;let trunk=B.MeshBuilder.CreateCylinder('palm',{height:7,diameterTop:.6,diameterBottom:1.3,tessellation:6},scene);trunk.position=p.add(new B.Vector3(0,3.5,0));trunk.material=brown;let leaves=B.MeshBuilder.CreateSphere('canopy',{diameter:8,segments:5},scene);leaves.scaling.y=.4;leaves.position=p.add(new B.Vector3(0,8,0));leaves.material=green}
 if(selectedMap!==0){
  const accent=mat('map accent',selectedMap===1?'#48c7e9':selectedMap===2?'#a67c52':selectedMap===3?'#345b40':'#a1d3d9');
  for(let i=0;i<35;i++){
-  const k=(i*11)%N,p=offset(k,44+(i%4)*14*(i%2?1:-1));
+  const k=(i*11)%N,p=offset(k,(i%2?1:-1)*(62+(i%4)*17));
+  const radius=selectedMap===1?13:selectedMap===3?13:selectedMap===2?10:4;
+  if(!clearOfTrack(p,radius))continue;
   if(selectedMap===1){
    const tower=B.MeshBuilder.CreateBox('city tower',{width:9+(i%3)*5,height:20+(i%6)*9,depth:10},scene);
    tower.position.set(p.x,12+(i%6)*4.5,p.z);tower.material=accent;
