@@ -63,3 +63,9 @@ No background development is running beyond the available tool session.
 - `8f0f794`: emulator CI now requires this marker, collects logcat and screenshot; APK build and emulator runtime remain **NOT VERIFIED**.
 - Local container: Node present, but Android SDK/Gradle and GitHub network checkout unavailable. No APK or emulator test executed locally.
 - Next: inspect actual GitHub Actions logs and screenshot; fix first observed failure. Main/checkpoint unchanged.
+
+## CI failure investigation — 2026-10-17
+- User-supplied Actions screenshot confirms source smoke test, Node setup, Java setup all succeeded. CI failed at `android-actions/setup-android@v3` **before Android compilation**.
+- Last visible log lines show Android SDK repository fetch at 55%; screenshot does not include terminal failure message, so root cause is not yet proven.
+- Commit `4b20567` bypasses the failing setup action and checks the runner's preinstalled Android SDK. This is a targeted workaround, **not a verified fix** until the next run.
+- Next: inspect new CI run; resolve first actual Gradle or emulator failure.
