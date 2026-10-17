@@ -286,7 +286,8 @@ function setDifficulty(value){
 }
 document.querySelectorAll('[data-difficulty]').forEach(b=>b.onclick=()=>setDifficulty(b.dataset.difficulty));
 setDifficulty(difficulty);
-const held=(...ks)=>ks.some(k=>keys[k]);let active=false,elapsed=0,countdown=0,inventory=0,coins=Number(localStorage.getItem('nbr_coins')||0),mode='quick',previous=0;
+const held=(...ks)=>ks.some(k=>keys[k]);let active=false,elapsed=0,countdown=0,inventory=0,coins=Number(localStorage.getItem('nbr_coins')||0),mode='quick';
+const lapTracker=createLapTracker(N);
 const carsCatalog=[
  {name:'Beach Runner',price:0,color:'#ff9f18',speed:1,handling:1},
  {name:'Coastal GT',price:250,color:'#25c8d8',speed:1.10,handling:1.06},
@@ -507,7 +508,7 @@ function begin(m){
   setDifficulty(championship[careerStage].difficulty);
   if(!seriesActive){seriesRound=0;seriesScores=[0,0,0,0];seriesHistory=[];seriesActive=true;saveChampionship()}
  }
- active=true;elapsed=0;countdown=3.5;inventory=2;previous=0;player.speed=0;player.lap=0;player.boost=100;place(player,0,-3);bots.forEach((b,i)=>{b.speed=0;b.progress=-(3+i*3);b.lap=0;b.lane=i%2?-3:3;b.stun=0;b.pulse=i*2.1;b.personality=i;b.finishTime=null;place(b,N-3-i*3,b.lane)});document.getElementById('menu').style.display='none';msg.textContent=''}
+ active=true;elapsed=0;countdown=3.5;inventory=2;lapTracker.reset();player.speed=0;player.lap=0;player.boost=100;place(player,0,-3);bots.forEach((b,i)=>{b.speed=0;b.progress=-(3+i*3);b.lap=0;b.lane=i%2?-3:3;b.stun=0;b.pulse=i*2.1;b.personality=i;b.finishTime=null;place(b,N-3-i*3,b.lane)});document.getElementById('menu').style.display='none';msg.textContent=''}
 document.getElementById('start').onclick=()=>begin('quick');document.getElementById('career').onclick=()=>begin('career');
 const hud=document.getElementById('hud'),msg=document.getElementById('message');
 document.getElementById('resultContinue').onclick=()=>{
@@ -602,7 +603,7 @@ function drawMinimap(){
   }
 }
 engine.runRenderLoop(()=>{let dt=Math.min(engine.getDeltaTime()/1000,.04);if(active&&!paused){if(countdown>0){countdown-=dt;msg.textContent=countdown>1?Math.ceil(countdown):'GO!';msg.classList.add('counting');msg.classList.toggle('go',countdown<=1);if(countdown<=0){msg.textContent='';msg.classList.remove('counting','go');beep(750,.16,.04)}else if(Math.ceil(countdown)!==Math.ceil(countdown+dt))beep(430,.07,.025)}else{elapsed+=dt;let turn=(held('a','arrowleft')?-1:0)+(held('d','arrowright')?1:0),accelerate=true,brake=held('s','arrowdown'),drift=held(' '),nitro=held('shift');let target=(brake?9:53)*(carsCatalog[selectedCar].speed+speedLevel*.045);
- raceSoundEvents(nitro&&!brake&&player.boost>0,drift&&Math.abs(player.speed)>8,brake&&Math.abs(player.speed)>10);player.boost=Math.min(100,player.boost+dt*(mode==='career'?championship[careerStage].boostRecharge:5));if(nitro&&!brake&&player.boost>0){target=95*(carsCatalog[selectedCar].speed+speedLevel*.045);player.boost=Math.max(0,player.boost-dt*(mode==='career'?championship[careerStage].nitroRate:23));msg.textContent='⚡ NITRO!'}else if(drift&&Math.abs(player.speed)>8){msg.textContent='💨 DRIFT!'}else if(msg.textContent==='⚡ NITRO!'||msg.textContent==='💨 DRIFT!'){msg.textContent=''}player.speed+=(target-player.speed)*Math.min(1,dt*(brake?3.5:1.5));player.root.rotation.y+=turn*dt*(.8+Math.min(Math.abs(player.speed)/42,1)*1.5)*(drift?2.1:1)*(carsCatalog[selectedCar].handling+handlingLevel*.06)*Math.sign(player.speed||1);let forward=new B.Vector3(Math.sin(player.root.rotation.y),0,Math.cos(player.root.rotation.y));player.root.position.addInPlace(forward.scale(player.speed*dt));let near=nearest(player.root.position);if(near.dist>15){player.speed*=1-dt*.9;if(near.dist>45){let p=offset(near.idx,0);player.root.position=B.Vector3.Lerp(player.root.position,p,.07)}}if(near.idx<12&&previous>N-16&&player.speed>0){player.lap++;if(player.lap>=(mode==='career'?championship[careerStage].laps:3))finish()}previous=near.idx;for(let b of bots){
+ raceSoundEvents(nitro&&!brake&&player.boost>0,drift&&Math.abs(player.speed)>8,brake&&Math.abs(player.speed)>10);player.boost=Math.min(100,player.boost+dt*(mode==='career'?championship[careerStage].boostRecharge:5));if(nitro&&!brake&&player.boost>0){target=95*(carsCatalog[selectedCar].speed+speedLevel*.045);player.boost=Math.max(0,player.boost-dt*(mode==='career'?championship[careerStage].nitroRate:23));msg.textContent='⚡ NITRO!'}else if(drift&&Math.abs(player.speed)>8){msg.textContent='💨 DRIFT!'}else if(msg.textContent==='⚡ NITRO!'||msg.textContent==='💨 DRIFT!'){msg.textContent=''}player.speed+=(target-player.speed)*Math.min(1,dt*(brake?3.5:1.5));player.root.rotation.y+=turn*dt*(.8+Math.min(Math.abs(player.speed)/42,1)*1.5)*(drift?2.1:1)*(carsCatalog[selectedCar].handling+handlingLevel*.06)*Math.sign(player.speed||1);let forward=new B.Vector3(Math.sin(player.root.rotation.y),0,Math.cos(player.root.rotation.y));player.root.position.addInPlace(forward.scale(player.speed*dt));let near=nearest(player.root.position);if(near.dist>15){player.speed*=1-dt*.9;if(near.dist>45){let p=offset(near.idx,0);player.root.position=B.Vector3.Lerp(player.root.position,p,.07)}}if(lapTracker.update(near.idx,near.dist<=15&&player.speed>0)){player.lap++;if(player.lap>=(mode==='career'?championship[careerStage].laps:3))finish()}for(let b of bots){
   const i=bots.indexOf(b);
   if(b.finishTime!==null)continue;
   const playerTotal=player.lap*N+near.idx;
