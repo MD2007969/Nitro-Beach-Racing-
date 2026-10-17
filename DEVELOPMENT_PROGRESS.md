@@ -69,3 +69,8 @@ No background development is running beyond the available tool session.
 - Last visible log lines show Android SDK repository fetch at 55%; screenshot does not include terminal failure message, so root cause is not yet proven.
 - Commit `4b20567` bypasses the failing setup action and checks the runner's preinstalled Android SDK. This is a targeted workaround, **not a verified fix** until the next run.
 - Next: inspect new CI run; resolve first actual Gradle or emulator failure.
+
+## Browser playtest deployment — 2026-10-17
+- Added docs/index.html, docs/main.js, docs/lap-progress.js to the development branch for a browser-playable GitHub Pages site.
+- HTML references Babylon CDN plus two local JavaScript files; all three dependencies accounted for. Browser hosting must be configured in repository Settings > Pages (deploy from development branch /docs); publication and gameplay not verified.
+- No changes to main or protected Garage 4.2 checkpoint.
