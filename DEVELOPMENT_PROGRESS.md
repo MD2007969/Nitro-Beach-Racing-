@@ -56,3 +56,10 @@ No background development is running beyond the available tool session.
 - `b573237`: bug tracker updated.
 - Local environment has Node.js 22 but no Gradle executable; full Android build and emulator were **not run locally**.
 - Development-only branch changed; checkpoint and main unchanged. **Next:** obtain actual CI run logs and address the first confirmed failure.
+
+## Testing and startup instrumentation — 2026-10-17
+- Verified in connector execution: JS source parses using V8 `new Function`; all literal `getElementById` references match HTML IDs. **PASS** (static tests only).
+- `96edc5b`: added `NITRO_GAME_INITIALIZED` console marker after game render-loop registration.
+- `8f0f794`: emulator CI now requires this marker, collects logcat and screenshot; APK build and emulator runtime remain **NOT VERIFIED**.
+- Local container: Node present, but Android SDK/Gradle and GitHub network checkout unavailable. No APK or emulator test executed locally.
+- Next: inspect actual GitHub Actions logs and screenshot; fix first observed failure. Main/checkpoint unchanged.
