@@ -17,8 +17,13 @@ function applyTheme(name){
  selectedTheme=name;localStorage.setItem('nbr_theme',name);
  const t=themes[name];scene.clearColor=new B.Color4(...t.sky,1);
  for(const [m,key] of [[sand,'sand'],[sea,'sea'],[road,'road'],[green,'green']])m.diffuseColor=B.Color3.FromHexString(t[key]);
+ // Match subtle road wear to the selected map and time of day.
+ innerRoad.diffuseColor=B.Color3.Lerp(road.diffuseColor,new B.Color3(.26,.28,.3),.17);
+ shoulderSurface.diffuseColor=B.Color3.Lerp(road.diffuseColor,sand.diffuseColor,.35);
  sunlight.intensity=t.light;
- if(selectedMap!==0){const mc=mapColors[selectedMap];sand.diffuseColor=B.Color3.FromHexString(mc.sand);sea.diffuseColor=B.Color3.FromHexString(mc.sea);green.diffuseColor=B.Color3.FromHexString(mc.green);road.diffuseColor=B.Color3.FromHexString(mc.road)}
+ if(selectedMap!==0){const mc=mapColors[selectedMap];sand.diffuseColor=B.Color3.FromHexString(mc.sand);sea.diffuseColor=B.Color3.FromHexString(mc.sea);green.diffuseColor=B.Color3.FromHexString(mc.green);road.diffuseColor=B.Color3.FromHexString(mc.road);
+ innerRoad.diffuseColor=B.Color3.Lerp(road.diffuseColor,new B.Color3(.26,.28,.3),.17);
+ shoulderSurface.diffuseColor=B.Color3.Lerp(road.diffuseColor,sand.diffuseColor,.35)}
  document.querySelectorAll('[data-theme]').forEach(b=>{b.style.outline=b.dataset.theme===name?'3px solid white':'none';b.setAttribute('aria-pressed',String(b.dataset.theme===name))});
 }
 const ground=B.MeshBuilder.CreateGround('island',{width:1100,height:1100},scene);ground.material=sand;
@@ -55,8 +60,18 @@ if(selectedMap!==0){const mc=mapColors[selectedMap];sand.diffuseColor=B.Color3.F
 function tangent(i){return points[(i+1)%N].subtract(points[(i+N-1)%N]).normalize()}
 function offset(i,side){let t=tangent(i);return points[i].add(new B.Vector3(-t.z,0,t.x).scale(side))}
 function ribbon(name,width,material,y=0){let path1=[],path2=[];for(let i=0;i<=N;i++){let k=i%N;path1.push(offset(k,-width/2).add(new B.Vector3(0,y,0)));path2.push(offset(k,width/2).add(new B.Vector3(0,y,0)))}let mesh=B.MeshBuilder.CreateRibbon(name,{pathArray:[path1,path2],sideOrientation:B.Mesh.DOUBLESIDE},scene);mesh.material=material;return mesh}
-ribbon('road',25,road,.02);
+// Layered track surface: painted shoulders and a restrained central asphalt strip.
+const shoulderSurface=mat('track shoulder','#77736c');
+shoulderSurface.specularColor=new B.Color3(.035,.035,.035);
+road.specularColor=new B.Color3(.075,.075,.075);
+const trackBorder=ribbon('track border',28,shoulderSurface,.012);
+const trackSurface=ribbon('road',25,road,.024);
+const innerRoad=mat('asphalt center wear','#3d434a');
+innerRoad.specularColor=new B.Color3(.045,.045,.045);
+const wornCenter=ribbon('asphalt center',8,innerRoad,.029);
 const shoulder=mat('warm shoulder','#f3e5bc'),stripe=mat('lane dash','#fff5d4');
+shoulder.specularColor=new B.Color3(.08,.08,.08);
+stripe.emissiveColor=new B.Color3(.045,.042,.031);
 for(let i=0;i<N;i+=4){
   for(const side of [-1,1]){const p=offset(i,side*12);const t=tangent(i);
     const line=B.MeshBuilder.CreateBox('edge',{width:.32,height:.08,depth:5.6},scene);
@@ -64,6 +79,14 @@ for(let i=0;i<N;i+=4){
   }
 }
 for(let i=0;i<N;i+=8){const p=points[i],t=tangent(i);const dash=B.MeshBuilder.CreateBox('dash',{width:.28,height:.08,depth:7},scene);dash.position=p.add(new B.Vector3(0,.25,0));dash.rotation.y=Math.atan2(t.x,t.z);dash.material=stripe}
+const startMark=mat('start grid white','#e9edf0'),startDark=mat('start grid dark','#222934');
+for(let row=0;row<2;row++)for(let col=0;col<8;col++){
+ const t=tangent(0),p=offset(0,(col-3.5)*3).add(t.scale((row-.5)*2.4));
+ const tile=B.MeshBuilder.CreateBox('starting grid',{width:2.95,height:.055,depth:2.35},scene);
+ tile.position=p.add(new B.Vector3(0,.28,0));tile.rotation.y=Math.atan2(t.x,t.z);
+ tile.material=(row+col)%2?startMark:startDark;
+}
+
 
 function clearOfTrack(position,objectRadius=0){
  const clearance=22+objectRadius;
