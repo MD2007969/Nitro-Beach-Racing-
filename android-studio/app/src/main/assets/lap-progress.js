@@ -20,6 +20,7 @@
         if (!Number.isInteger(index) || index < 0 || index >= trackLength) return false;
         const forward = (index - previous + trackLength) % trackLength;
         const limit = Math.max(4, Math.floor(trackLength / 12));
+        if (Math.min(forward, trackLength - forward) > limit) nextGate = 1;
         const valid = onTrack && forward > 0 && forward <= limit;
         const gate = gates[nextGate];
         const crossed = gate === 0
