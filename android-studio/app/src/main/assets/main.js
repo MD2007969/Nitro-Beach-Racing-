@@ -403,6 +403,7 @@ window.addEventListener('keydown',e=>{if(e.key==='Escape'&&active){e.preventDefa
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&active&&!paused)setPaused(true)});
 function begin(m){
  document.getElementById('results').style.display='none';
+ msg.classList.remove('counting','go','celebrate');
  paused=false;clearControls();resetSoundEvents();
  document.getElementById('pauseMenu').style.display='none';
  document.getElementById('pauseButton').style.display='block';
@@ -469,6 +470,10 @@ function finish(){
  document.querySelector('#menu p').textContent=result+' · +'+reward+' coins';
  const results=document.getElementById('results');
  const title=document.getElementById('resultTitle');
+ const wonCup=mode==='career'&&!seriesActive&&result.startsWith('🏆');
+ const podium=rank===1||wonCup;
+ document.getElementById('resultTrophy').textContent=wonCup?'🏆':rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'🏁';
+ results.querySelector('.resultCard').classList.toggle('winner',podium);
  title.textContent=mode==='career'?(seriesActive?'🏁 ROUND COMPLETE':result.startsWith('🏆')?'🏆 CHAMPIONSHIP WINNER':'🏁 CHAMPIONSHIP COMPLETE'):'🏁 RACE COMPLETE';
  document.getElementById('resultSubtitle').textContent=result;
  document.getElementById('resultReward').textContent='🪙 +'+reward+' coins · Balance '+coins;
@@ -481,8 +486,10 @@ function finish(){
  :'Quick race · '+mapCatalog[selectedMap].name;
  document.getElementById('resultContinue').textContent=mode==='career'&&seriesActive?'▶ NEXT ROUND':'⌂ MAIN MENU';
  results.style.display='flex';
- msg.textContent='🏁 FINISH!';
- setTimeout(()=>msg.textContent='',2400)
+ msg.textContent=wonCup?'🏆 CHAMPION!':rank===1?'🥇 VICTORY!':'🏁 FINISH!';
+ msg.classList.remove('counting','go');msg.classList.add('celebrate');
+ const ceremonyMessage=msg.textContent;
+ setTimeout(()=>{if(msg.textContent===ceremonyMessage){msg.textContent='';msg.classList.remove('celebrate')}},1800)
 }
 
 // Lightweight live minimap: yellow player marker and three colored rival markers.
@@ -500,7 +507,7 @@ function drawMinimap(){
     ctx.strokeStyle='#07131c';ctx.lineWidth=1.5;ctx.stroke();
   }
 }
-engine.runRenderLoop(()=>{let dt=Math.min(engine.getDeltaTime()/1000,.04);if(active&&!paused){if(countdown>0){countdown-=dt;msg.textContent=countdown>1?Math.ceil(countdown):'GO!';msg.classList.add('counting');if(countdown<=0){msg.textContent='';msg.classList.remove('counting');beep(750,.16,.04)}else if(Math.ceil(countdown)!==Math.ceil(countdown+dt))beep(430,.07,.025)}else{elapsed+=dt;let turn=(held('a','arrowleft')?-1:0)+(held('d','arrowright')?1:0),accelerate=true,brake=held('s','arrowdown'),drift=held(' '),nitro=held('shift');let target=(brake?9:53)*(carsCatalog[selectedCar].speed+speedLevel*.045);
+engine.runRenderLoop(()=>{let dt=Math.min(engine.getDeltaTime()/1000,.04);if(active&&!paused){if(countdown>0){countdown-=dt;msg.textContent=countdown>1?Math.ceil(countdown):'GO!';msg.classList.add('counting');msg.classList.toggle('go',countdown<=1);if(countdown<=0){msg.textContent='';msg.classList.remove('counting','go');beep(750,.16,.04)}else if(Math.ceil(countdown)!==Math.ceil(countdown+dt))beep(430,.07,.025)}else{elapsed+=dt;let turn=(held('a','arrowleft')?-1:0)+(held('d','arrowright')?1:0),accelerate=true,brake=held('s','arrowdown'),drift=held(' '),nitro=held('shift');let target=(brake?9:53)*(carsCatalog[selectedCar].speed+speedLevel*.045);
  raceSoundEvents(nitro&&!brake&&player.boost>0,drift&&Math.abs(player.speed)>8,brake&&Math.abs(player.speed)>10);player.boost=Math.min(100,player.boost+dt*(mode==='career'?championship[careerStage].boostRecharge:5));if(nitro&&!brake&&player.boost>0){target=95*(carsCatalog[selectedCar].speed+speedLevel*.045);player.boost=Math.max(0,player.boost-dt*(mode==='career'?championship[careerStage].nitroRate:23));msg.textContent='⚡ NITRO!'}else if(drift&&Math.abs(player.speed)>8){msg.textContent='💨 DRIFT!'}else if(msg.textContent==='⚡ NITRO!'||msg.textContent==='💨 DRIFT!'){msg.textContent=''}player.speed+=(target-player.speed)*Math.min(1,dt*(brake?3.5:1.5));player.root.rotation.y+=turn*dt*(.8+Math.min(Math.abs(player.speed)/42,1)*1.5)*(drift?2.1:1)*(carsCatalog[selectedCar].handling+handlingLevel*.06)*Math.sign(player.speed||1);let forward=new B.Vector3(Math.sin(player.root.rotation.y),0,Math.cos(player.root.rotation.y));player.root.position.addInPlace(forward.scale(player.speed*dt));let near=nearest(player.root.position);if(near.dist>15){player.speed*=1-dt*.9;if(near.dist>45){let p=offset(near.idx,0);player.root.position=B.Vector3.Lerp(player.root.position,p,.07)}}if(near.idx<12&&previous>N-16&&player.speed>0){player.lap++;if(player.lap>=(mode==='career'?championship[careerStage].laps:3))finish()}previous=near.idx;for(let b of bots){
   const i=bots.indexOf(b);
   if(b.finishTime!==null)continue;
