@@ -52,3 +52,9 @@ Do not claim autonomous execution outside an active session. When user types UND
 - Static checks executed via connector V8: game JS parses; DOM IDs match HTML; initialization marker and CI assertion present. PASS.
 - APK compilation: NOT RUN here. Android emulator: NOT RUN here. Device: NOT RUN. GitHub Actions run results unavailable in connector.
 - Exact next action: inspect GitHub Actions job logs/artifacts for latest development commit, especially `nitro-android-startup-diagnostics` screenshot/logcat. Correct confirmed failures and rerun. Do not touch protected recovery branch or main.
+
+## CI failure and fix attempt — 2026-10-17
+- Screenshot supplied by user: smoke check and Java setup passed, Android SDK setup action failed. Full failure text not visible.
+- `4b20567f1230d9232fee575d3ed9f138acaae2ea`: replaced setup-android action with preinstalled SDK availability check.
+- Verification: GitHub commit succeeded; new workflow execution **not yet verified**.
+- Exact next step: open GitHub Actions latest run on development branch; inspect first red step and full error text, then patch and retest.
