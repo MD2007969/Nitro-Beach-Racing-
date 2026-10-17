@@ -35,3 +35,6 @@ User installed a recent APK and reports the game **did not run**. This is an **u
 
 ## Recovery
 Do not modify branch `checkpoint-before-next-prompt-2026-10-17`; it points to baseline commit `27b5f1c80d23fc6f29773d261d799cd22b21b8bf`. User's explicit **UNDO** instruction authorizes restoration of active game code to that snapshot without deleting git history or user save data.
+
+## Screenshot diagnosis — 2026-10-17
+User screenshot displays `JavaScript error: Script error. at game:0`. This is an opaque browser/WebView script error, not a useful JavaScript stack trace. Root cause remains unconfirmed. Commit `9222624` ignores only this opaque event while retaining logging and surfacing script-load or initialization failures. The code still requires Android build and device regression tests before declaring the startup defect resolved.
