@@ -57,10 +57,7 @@ jobs:
             adb shell dumpsys activity activities > nitro-activity-state.txt
             adb shell screencap -p /sdcard/nitro-startup.png
             adb pull /sdcard/nitro-startup.png nitro-startup.png
-            if grep -E 'FATAL EXCEPTION|Process: com.nitrobeach.racing|NitroWebView.*(Uncaught|SyntaxError|ReferenceError|TypeError|Script error|Failed to load resource)' nitro-android-logcat.txt; then
-              echo 'Android fatal error or JavaScript exception detected'
-              exit 1
-            fi
+            ! grep -E 'FATAL EXCEPTION|Process: com.nitrobeach.racing|NitroWebView.*(Uncaught|SyntaxError|ReferenceError|TypeError|Script error|Failed to load resource)' nitro-android-logcat.txt || { echo 'Android fatal error or JavaScript exception detected'; exit 1; }
             grep -q 'com.nitrobeach.racing' nitro-activity-state.txt || { echo 'Game activity not detected'; exit 1; }
             grep -q 'NITRO_GAME_INITIALIZED' nitro-android-logcat.txt || { echo 'Game initialization marker not observed: check WebView logcat and screenshot'; exit 1; }
             echo 'Game initialization marker observed; rendering and gameplay still require visual testing.'
