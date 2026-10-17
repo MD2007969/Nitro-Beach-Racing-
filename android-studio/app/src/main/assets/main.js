@@ -177,6 +177,57 @@ function car(name,color,index,lane){
  }
  const c={root,index,lane,speed:0,lap:0,progress:0,boost:0};place(c,index,lane);return c
 }
+// Four distinct lightweight silhouettes. Built once and switched on car selection.
+function buildCarStyles(root){
+ const styles=[[],[],[],[]],painted=[];
+ const trim=mat('style matte graphite','#1b2533'),silver=mat('style brushed steel','#b7c9d8'),gold=mat('style racing gold','#ffd365');
+ function piece(id,label,opts,x,y,z,material,paintable=false){
+  const m=B.MeshBuilder.CreateBox('YOU style '+id+' '+label,opts,scene);
+  m.parent=root;m.position.set(x,y,z);m.material=material;styles[id].push(m);
+  if(paintable)painted.push(m);return m;
+ }
+ // Beach Runner: raised off-road roof rack, sturdy side steps and bull bar.
+ for(const x of [-1.03,1.03]){
+  piece(0,'rack rail',{width:.13,height:.18,depth:2.0},x,3.13,-.56,trim);
+  piece(0,'side step',{width:.32,height:.13,depth:3.7},x*1.73,.77,-.15,silver);
+  piece(0,'front guard',{width:.16,height:.58,depth:.17},x*1.05,1.25,3.37,trim);
+ }
+ for(const z of [-1.35,.2])piece(0,'rack crossbar',{width:2.2,height:.12,depth:.16},0,3.17,z,silver);
+ piece(0,'bull bar',{width:2.85,height:.16,depth:.18},0,1.25,3.43,silver);
+ // Coastal GT: clean grand-tourer with long rocker skirts and a low rear lip.
+ for(const x of [-1.68,1.68]){
+  piece(1,'side aero skirt',{width:.18,height:.34,depth:3.7},x,.98,-.05,trim);
+  piece(1,'hood ridge',{width:.13,height:.07,depth:1.6},x*.53,1.99,2.03,silver);
+ }
+ piece(1,'rear lip',{width:3.25,height:.14,depth:.3},0,2.03,-3.03,silver);
+ piece(1,'front air dam',{width:3.15,height:.25,depth:.22},0,.72,3.14,trim);
+ // Sunset Viper: aggressive dual racing stripes, tall wing and splitters.
+ for(const x of [-.42,.42]){
+  piece(2,'hood racing stripe',{width:.23,height:.065,depth:1.72},x,1.983,2.06,gold);
+  piece(2,'roof racing stripe',{width:.23,height:.065,depth:1.48},x,2.987,-.56,gold);
+  piece(2,'wing support',{width:.14,height:.56,depth:.18},x*2.6,2.45,-3.0,trim);
+  piece(2,'front winglet',{width:.65,height:.10,depth:.65},x*3.7,.82,3.07,trim);
+ }
+ piece(2,'raised wing',{width:4.15,height:.16,depth:.58},0,2.8,-3.02,trim);
+ // Nitro Phantom: angular stealth aero, dorsal spine and luminous accents.
+ const neon=mat('phantom cyan accents','#23dfff');neon.emissiveColor=new B.Color3(.03,.24,.31);
+ for(const x of [-1,1]){
+  const blade=piece(3,'side blade',{width:.25,height:.40,depth:2.45},x*1.67,1.38,-.65,trim);
+  blade.rotation.y=x*.10;
+  piece(3,'blade highlight',{width:.07,height:.07,depth:2.1},x*1.81,1.66,-.65,neon);
+  piece(3,'rear aero fin',{width:.16,height:.68,depth:1.2},x*1.28,2.34,-2.54,trim);
+  piece(3,'rear light accent',{width:.8,height:.075,depth:.10},x*1.05,1.77,-3.27,neon);
+ }
+ piece(3,'center spine',{width:.22,height:.12,depth:1.45},0,3.02,-.54,trim);
+ piece(3,'diffuser accent',{width:2.4,height:.08,depth:.15},0,.78,-3.30,neon);
+ return {styles,painted};
+}
+const carStyles=buildCarStyles(player.root);
+function applyCarStyle(){
+ carStyles.styles.forEach((meshes,i)=>meshes.forEach(m=>m.setEnabled(i===selectedCar)));
+ // Hide the standard wing on off-road/GT models; use bespoke wings on sports models.
+ player.root.getChildMeshes().forEach(m=>{if(m.name==='YOU spoiler')m.setEnabled(selectedCar===0||selectedCar===1)});
+}
 function place(c,index,lane){let p=offset((index+N)%N,lane);c.root.position.set(p.x,.1,p.z);let t=tangent((index+N)%N);c.root.rotation.y=Math.atan2(t.x,t.z)}
 const player=car('YOU','#ff9f18',0,-3),bots=[car('RIVAL 1','#e83e64',N-3,3),car('RIVAL 2','#22bbd2',N-6,-3),car('RIVAL 3','#9b65ee',N-9,3)];camera.lockedTarget=player.root;
 
@@ -291,7 +342,7 @@ function saveGarage(){
  localStorage.setItem('nbr_handling_level',String(handlingLevel));
  localStorage.setItem('nbr_coins',String(coins));
 }
-function applyCar(){const spec=carsCatalog[selectedCar];const chosen=customPaint[selectedCar];const color=paintPalette.includes(chosen)?chosen:spec.color;const paintColor=B.Color3.FromHexString(color);player.root.getChildMeshes().forEach(m=>{if(m.name==='YOU body'||m.name==='YOU front hood'||m.name==='YOU rear deck'||m.name==='YOU roof'||m.name==='YOU mirror')m.material.diffuseColor=paintColor})}
+function applyCar(){applyCarStyle();const spec=carsCatalog[selectedCar];const chosen=customPaint[selectedCar];const color=paintPalette.includes(chosen)?chosen:spec.color;const paintColor=B.Color3.FromHexString(color);player.root.getChildMeshes().forEach(m=>{if(m.name==='YOU body'||m.name==='YOU front hood'||m.name==='YOU rear deck'||m.name==='YOU roof'||m.name==='YOU mirror')m.material.diffuseColor=paintColor})}
 function refreshPaint(){
  const options=document.getElementById('paintOptions'),status=document.getElementById('paintStatus');
  if(!options||!status)return;
