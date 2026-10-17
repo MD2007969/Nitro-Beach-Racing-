@@ -222,7 +222,6 @@ function buildCarStyles(root){
  piece(3,'diffuser accent',{width:2.4,height:.08,depth:.15},0,.78,-3.30,neon);
  return {styles,painted};
 }
-const carStyles=buildCarStyles(player.root);
 function applyCarStyle(){
  carStyles.styles.forEach((meshes,i)=>meshes.forEach(m=>m.setEnabled(i===selectedCar)));
  // Hide the standard wing on off-road/GT models; use bespoke wings on sports models.
@@ -230,6 +229,8 @@ function applyCarStyle(){
 }
 function place(c,index,lane){let p=offset((index+N)%N,lane);c.root.position.set(p.x,.1,p.z);let t=tangent((index+N)%N);c.root.rotation.y=Math.atan2(t.x,t.z)}
 const player=car('YOU','#ff9f18',0,-3),bots=[car('RIVAL 1','#e83e64',N-3,3),car('RIVAL 2','#22bbd2',N-6,-3),car('RIVAL 3','#9b65ee',N-9,3)];camera.lockedTarget=player.root;
+const carStyles=buildCarStyles(player.root);
+
 
 const fxBlue=mat('nitro glow','#15b9ff'),fxOrange=mat('nitro core','#ffe2a2'),smokeMat=mat('drift dust','#e9e5d5');
 const flames=[],flameCores=[],smoke=[];
