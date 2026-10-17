@@ -80,13 +80,12 @@
 (function(){
  var started=false;
  function fail(message){
-  if(started)return;
   var panel=document.getElementById('startupError');
   document.getElementById('startupErrorMessage').textContent=message;
   panel.style.display='block';
   if(window.AndroidGameDiagnostics&&window.AndroidGameDiagnostics.report)window.AndroidGameDiagnostics.report(message);
  }
- window.addEventListener('error',function(e){fail('JavaScript error: '+(e.message||'Unknown error')+' at '+(e.filename||'game')+':'+(e.lineno||0));});
+ window.addEventListener('error',function(e){fail('JavaScript error: '+(e.message||'Unknown error')+' at '+(e.filename||'game')+':'+(e.lineno||0)+':'+(e.colno||0));});
  window.addEventListener('unhandledrejection',function(e){fail('Game initialization failed: '+String(e.reason||'Unknown rejection'));});
  window.nitroStartupCheck=function(){if(!window.BABYLON){fail('Bundled 3D engine failed to load. Please reinstall the latest APK.');return false;}return true;};
  window.nitroMarkStarted=function(){started=true;};
