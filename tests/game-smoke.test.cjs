@@ -17,4 +17,29 @@ assert.match(html,/<script src="main\.js"><\/script>/,'Main game must load');
 assert.match(js,/engine\.runRenderLoop\(/,'Rendering loop must be registered');
 assert.match(js,/function begin\(/,'Race startup must exist');
 assert.match(js,/function finish\(/,'Race completion must exist');
-console.log('PASS: JS syntax, UI IDs, game loading and racing entry points');
+const createLapTracker = require('../android-studio/app/src/main/assets/lap-progress.js');
+assert.match(html, /<script src="lap-progress\\.js"><\\/script><script src="main\\.js"><\\/script>/,
+  'Lap tracker must load before the game');
+const lap = createLapTracker(160);
+function drive(tracker, from, to) {
+  let counted = 0;
+  for (let i = from; i <= to; i++) if (tracker.update(i % 160)) counted++;
+  return counted;
+}
+assert.equal(drive(lap, 1, 159), 0, 'Passing intermediate gates must not award a lap');
+assert.equal(lap.update(0), true, 'A full circuit awards exactly one lap');
+assert.equal(drive(lap, 1, 159), 0);
+assert.equal(lap.update(0), true, 'The following full circuit awards one more lap');
+lap.reset();
+assert.equal(lap.update(159), false, 'Reversing over the start line is not a lap');
+assert.equal(lap.update(0), false, 'Returning to the start line is not a lap');
+lap.reset();
+drive(lap, 1, 120);
+assert.equal(lap.update(159), false, 'A position jump invalidates the gate sequence');
+assert.equal(lap.update(0), false, 'A jump followed by a finish crossing is not a lap');
+lap.reset();
+drive(lap, 1, 119);
+assert.equal(lap.update(120, false), false, 'An off-track gate is ignored');
+drive(lap, 121, 159);
+assert.equal(lap.update(0), false, 'The missed gate prevents a lap');
+console.log('PASS: JS syntax, UI IDs, game loading and lap progression');
