@@ -232,6 +232,7 @@ const player=car('YOU','#ff9f18',0,-3),bots=[car('RIVAL 1','#e83e64',N-3,3),car(
 const carStyles=buildCarStyles(player.root);
 const cosmeticRims=player.root.getChildMeshes().filter(m=>m.name==='YOU alloy rim');
 const cosmeticSpoiler=player.root.getChildMeshes().find(m=>m.name==='YOU spoiler');
+const rimFinishes=['#9da9b8','#171c25','#e3ba55','#4edcf2'];
 const rimMaterials=rimFinishes.map((color,i)=>mat('custom rim finish '+i,color));
 
 
@@ -294,7 +295,6 @@ const carsCatalog=[
 ];
 const paintPalette=['#ff9f18','#25c8d8','#ee4c70','#a06dff','#f4f4f4','#222b38','#53c66d','#ffd14d'];
 let customPaint={};try{const saved=JSON.parse(localStorage.getItem('nbr_custom_paint_v1')||'{}');if(saved&&typeof saved==='object'&&!Array.isArray(saved))customPaint=saved}catch(e){}
-const rimFinishes=['#9da9b8','#171c25','#e3ba55','#4edcf2'];
 let rimChoices={},spoilerChoices={};
 try{const s=JSON.parse(localStorage.getItem('nbr_cosmetics_v1')||'{}');if(s&&typeof s==='object'){rimChoices=s.rims||{};spoilerChoices=s.spoilers||{}}}catch(e){}
 let ownedCars=JSON.parse(localStorage.getItem('nbr_owned_cars')||'[0]');
