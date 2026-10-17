@@ -230,6 +230,9 @@ function applyCarStyle(){
 function place(c,index,lane){let p=offset((index+N)%N,lane);c.root.position.set(p.x,.1,p.z);let t=tangent((index+N)%N);c.root.rotation.y=Math.atan2(t.x,t.z)}
 const player=car('YOU','#ff9f18',0,-3),bots=[car('RIVAL 1','#e83e64',N-3,3),car('RIVAL 2','#22bbd2',N-6,-3),car('RIVAL 3','#9b65ee',N-9,3)];camera.lockedTarget=player.root;
 const carStyles=buildCarStyles(player.root);
+const cosmeticRims=player.root.getChildMeshes().filter(m=>m.name==='YOU alloy rim');
+const cosmeticSpoiler=player.root.getChildMeshes().find(m=>m.name==='YOU spoiler');
+const rimMaterials=rimFinishes.map((color,i)=>mat('custom rim finish '+i,color));
 
 
 const fxBlue=mat('nitro glow','#15b9ff'),fxOrange=mat('nitro core','#ffe2a2'),smokeMat=mat('drift dust','#e9e5d5');
@@ -291,6 +294,9 @@ const carsCatalog=[
 ];
 const paintPalette=['#ff9f18','#25c8d8','#ee4c70','#a06dff','#f4f4f4','#222b38','#53c66d','#ffd14d'];
 let customPaint={};try{const saved=JSON.parse(localStorage.getItem('nbr_custom_paint_v1')||'{}');if(saved&&typeof saved==='object'&&!Array.isArray(saved))customPaint=saved}catch(e){}
+const rimFinishes=['#9da9b8','#171c25','#e3ba55','#4edcf2'];
+let rimChoices={},spoilerChoices={};
+try{const s=JSON.parse(localStorage.getItem('nbr_cosmetics_v1')||'{}');if(s&&typeof s==='object'){rimChoices=s.rims||{};spoilerChoices=s.spoilers||{}}}catch(e){}
 let ownedCars=JSON.parse(localStorage.getItem('nbr_owned_cars')||'[0]');
 if(!Array.isArray(ownedCars))ownedCars=[0];
 let selectedCar=Number(localStorage.getItem('nbr_selected_car')||0);
@@ -338,12 +344,34 @@ function seriesText(){
 function saveGarage(){
  localStorage.setItem('nbr_owned_cars',JSON.stringify(ownedCars));
  localStorage.setItem('nbr_custom_paint_v1',JSON.stringify(customPaint));
+ localStorage.setItem('nbr_cosmetics_v1',JSON.stringify({rims:rimChoices,spoilers:spoilerChoices}));
  localStorage.setItem('nbr_selected_car',String(selectedCar));
  localStorage.setItem('nbr_speed_level',String(speedLevel));
  localStorage.setItem('nbr_handling_level',String(handlingLevel));
  localStorage.setItem('nbr_coins',String(coins));
 }
-function applyCar(){applyCarStyle();const spec=carsCatalog[selectedCar];const chosen=customPaint[selectedCar];const color=paintPalette.includes(chosen)?chosen:spec.color;const paintColor=B.Color3.FromHexString(color);player.root.getChildMeshes().forEach(m=>{if(m.name==='YOU body'||m.name==='YOU front hood'||m.name==='YOU rear deck'||m.name==='YOU roof'||m.name==='YOU mirror')m.material.diffuseColor=paintColor})}
+function applyCar(){applyCarStyle();applyCosmetics();const spec=carsCatalog[selectedCar];const chosen=customPaint[selectedCar];const color=paintPalette.includes(chosen)?chosen:spec.color;const paintColor=B.Color3.FromHexString(color);player.root.getChildMeshes().forEach(m=>{if(m.name==='YOU body'||m.name==='YOU front hood'||m.name==='YOU rear deck'||m.name==='YOU roof'||m.name==='YOU mirror')m.material.diffuseColor=paintColor})}
+function applyCosmetics(){
+ const rimIndex=Math.max(0,Math.min(3,Number(rimChoices[selectedCar])||0));
+ cosmeticRims.forEach(m=>m.material=rimMaterials[rimIndex]);
+ if(cosmeticSpoiler){
+  const choice=spoilerChoices[selectedCar]||'stock';
+  cosmeticSpoiler.setEnabled(choice!=='none'&&(selectedCar===0||selectedCar===1));
+  cosmeticSpoiler.scaling.y=choice==='sport'?1.7:1;
+ }
+}
+function refreshCosmetics(){
+ const rims=document.getElementById('rimOptions'),spoilers=document.getElementById('spoilerOptions'),status=document.getElementById('cosmeticStatus');
+ if(!rims||!spoilers||!status)return;
+ const selectedRim=Math.max(0,Math.min(3,Number(rimChoices[selectedCar])||0));
+ const rimNames=['Silver','Graphite','Gold','Cyan'];
+ rims.innerHTML=rimNames.map((name,i)=>'<button type="button" data-rim="'+i+'" class="'+(i===selectedRim?'selected':'')+'">'+name+'</button>').join('');
+ const selectedSpoiler=spoilerChoices[selectedCar]||'stock';
+ spoilers.innerHTML=['stock','sport','none'].map(x=>'<button type="button" data-spoiler="'+x+'" class="'+(x===selectedSpoiler?'selected':'')+'">'+(x==='stock'?'Standard':x==='sport'?'Sport':'None')+'</button>').join('');
+ status.textContent='Cosmetics are free · Settings saved per car';
+ rims.querySelectorAll('[data-rim]').forEach(b=>b.onclick=()=>{rimChoices[selectedCar]=Number(b.dataset.rim);saveGarage();applyCosmetics();refreshCosmetics()});
+ spoilers.querySelectorAll('[data-spoiler]').forEach(b=>b.onclick=()=>{spoilerChoices[selectedCar]=b.dataset.spoiler;saveGarage();applyCosmetics();refreshCosmetics()});
+}
 function refreshPaint(){
  const options=document.getElementById('paintOptions'),status=document.getElementById('paintStatus');
  if(!options||!status)return;
@@ -367,7 +395,7 @@ function refreshMaps(){
  });
 }
 function refreshGarage(){
- refreshPaint();
+ refreshPaint();refreshCosmetics();
  document.getElementById('garageCoins').textContent='🪙 '+coins+' coins';
  document.getElementById('garageCars').innerHTML=carsCatalog.map((spec,i)=>'<button data-car="'+i+'" style="background:'+(selectedCar===i?'#35a86c':'#263e57')+';color:white;margin:4px;border:1px solid #8ca4ba">'+spec.name+' · '+(ownedCars.includes(i)?selectedCar===i?'SELECTED':'OWNED':spec.price+' coins')+'</button>').join('');
  document.querySelectorAll('[data-car]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.car),spec=carsCatalog[i];if(!ownedCars.includes(i)){if(coins<spec.price){alert('Not enough coins! Race in Career to earn more.');return}coins-=spec.price;ownedCars.push(i)}selectedCar=i;saveGarage();applyCar();refreshGarage()});
