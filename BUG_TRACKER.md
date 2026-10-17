@@ -11,3 +11,5 @@
 
 ## Diagnostic update — 2026-10-17
 Development commit `1a7c39a` adds Android WebView console logging with tag `NitroWebView`. Commit `5237e29` updates emulator CI to flag recognizable JavaScript exceptions and failed resource loads. These are diagnostic improvements, **not evidence the historical startup defect is fixed**. No Android emulator or device run has been observed in this session.
+
+| BUG-005 | High | CI Android SDK setup | Screenshot of GitHub Actions shows `android-actions/setup-android@v3` failed after attempting to replace preinstalled sdkmanager and accept licenses; last visible log line is 55% repository fetch, so exact terminating error is not shown. | Unknown; SDK setup action fails before Gradle build | Replace action with preinstalled `ANDROID_HOME` SDK check (`4b20567`) | Await next CI run | Fix committed; not yet verified |
