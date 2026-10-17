@@ -1,0 +1,35 @@
+name: Nitro Buggy 2 — Source checks and Android build
+on:
+  push:
+    branches: [nitro-buggy-2-development-v2]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  smoke-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check game JavaScript and UI references
+        run: node tests/game-smoke.test.cjs
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Compile Android debug APK
+        working-directory: android-studio
+        run: gradle --no-daemon assembleDebug --stacktrace
+      - name: Save APK for device testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: nitro-buggy-2-debug-apk
+          path: android-studio/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
