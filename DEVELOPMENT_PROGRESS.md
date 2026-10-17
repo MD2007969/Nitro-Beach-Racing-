@@ -39,3 +39,12 @@ Updated: 2026-10-17
 5. Progress through race integrity, AI, combat, maps, vehicles, career, multiplayer, graphics, optimization, final QA.
 
 No background development is running beyond the available tool session.
+
+## Session update — 2026-10-17
+- Roadmap `DEVELOPMENT_ROADMAP.md` committed (`c8c16ee`), defining 14 phases and acceptance gates.
+- `BUG_TRACKER.md` committed (`084b248`), preserving historical startup failure and open risks without inventing root causes.
+- Emulator launch, Android logcat and activity diagnostics added to development CI (`2fcb0bb`).
+- `SESSION_STATE.md` created (`6869c82`) with exact resumption instructions.
+- Build, smoke test and emulator execution **not verified** in this assistant session. No new game logic has been merged into main.
+- **Current phase:** P01 stabilization; **completed and release-verified phases:** 0/14.
+- **Next priority:** Inspect CI run; repair observed failures before modifying gameplay.
