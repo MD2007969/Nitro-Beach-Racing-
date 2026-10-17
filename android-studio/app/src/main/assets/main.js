@@ -126,13 +126,33 @@ function car(name,color,index,lane){
  part('rear deck',{width:3.25,height:.34,depth:1.35},paint,0,1.78,-2.35);
  part('cabin',{width:2.65,height:1.15,depth:2.85},glass,0,2.22,-.3);
  part('roof',{width:2.5,height:.15,depth:1.55},paint,0,2.88,-.58);
+ // Lightweight visual detailing: no new textures or expensive real-time lights.
+ paint.specularColor=new B.Color3(.24,.24,.24);
+ paint.specularPower=48;
+ glass.specularColor=new B.Color3(.25,.35,.4);
+ glass.specularPower=64;
+ light.emissiveColor=new B.Color3(.42,.39,.24);
+ tail.emissiveColor=new B.Color3(.3,.015,.035);
+ const chrome=mat(name+' silver accents','#929eac'),rim=mat(name+' wheel rims','#9da9b8');
+ chrome.specularColor=new B.Color3(.35,.35,.35);
+ rim.specularColor=new B.Color3(.28,.28,.28);
+ part('front splitter',{width:3.3,height:.13,depth:.45},dark,0,.85,3.04);
+ part('rear diffuser',{width:3.15,height:.19,depth:.3},dark,0,.87,-3.13);
  part('front grille',{width:2.3,height:.33,depth:.12},dark,0,1.22,3.23);
+ part('grille accent',{width:1.9,height:.045,depth:.14},chrome,0,1.24,3.305);
+ part('hood detail',{width:1.6,height:.055,depth:.7},dark,0,1.965,1.95);
+ part('windshield highlight',{width:2.25,height:.045,depth:.12},chrome,0,2.7,.65);
+ part('rear bumper strip',{width:2.8,height:.095,depth:.12},chrome,0,1.12,-3.29);
  part('spoiler',{width:3.8,height:.19,depth:.52},dark,0,2.35,-3.0);
  for(const x of [-1.32,1.32]){
   part('headlamp',{width:.72,height:.23,depth:.14},light,x,1.58,3.2);
+  part('headlamp surround',{width:.85,height:.055,depth:.18},chrome,x,1.73,3.21);
   part('taillamp',{width:.73,height:.23,depth:.14},tail,x,1.52,-3.2);
+  part('tail accent',{width:.79,height:.045,depth:.16},chrome,x,1.68,-3.22);
   part('mirror',{width:.48,height:.28,depth:.46},paint,x*1.16,2.15,.5);
-  for(const z of [-2.12,2.12]){let wheel=B.MeshBuilder.CreateCylinder(name+' wheel',{diameter:1.55,height:.65,tessellation:12},scene);wheel.parent=root;wheel.rotation.z=Math.PI/2;wheel.position.set(x*1.33,.82,z);wheel.material=dark}
+  for(const z of [-2.12,2.12]){let wheel=B.MeshBuilder.CreateCylinder(name+' wheel',{diameter:1.55,height:.65,tessellation:12},scene);wheel.parent=root;wheel.rotation.z=Math.PI/2;wheel.position.set(x*1.33,.82,z);wheel.material=dark;
+   let hub=B.MeshBuilder.CreateCylinder(name+' alloy rim',{diameter:.9,height:.675,tessellation:10},scene);
+   hub.parent=root;hub.rotation.z=Math.PI/2;hub.position.set(x*1.33,.82,z);hub.material=rim}
  }
  const c={root,index,lane,speed:0,lap:0,progress:0,boost:0};place(c,index,lane);return c
 }
