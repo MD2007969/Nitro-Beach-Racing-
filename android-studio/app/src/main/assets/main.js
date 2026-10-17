@@ -146,18 +146,12 @@ function car(name,color,index,lane){
  part('front hood',{width:3.2,height:.32,depth:1.75},paint,0,1.78,2.05);
  part('rear deck',{width:3.25,height:.34,depth:1.35},paint,0,1.78,-2.35);
  part('cabin',{width:2.65,height:1.15,depth:2.85},glass,0,2.22,-.3);
- // Narrow body-color pillars give the cabin the look of framed automotive glass.
- for(const x of [-1.27,1.27]){
-  part('windshield pillar',{width:.13,height:.86,depth:.13},paint,x,2.27,.91);
-  part('rear pillar',{width:.14,height:.80,depth:.14},paint,x,2.27,-1.58);
- }
  part('roof',{width:2.5,height:.15,depth:1.55},paint,0,2.88,-.58);
  // Lightweight visual detailing: no new textures or expensive real-time lights.
  paint.specularColor=new B.Color3(.24,.24,.24);
  paint.specularPower=48;
  glass.specularColor=new B.Color3(.25,.35,.4);
  glass.specularPower=64;
- glass.emissiveColor=new B.Color3(.018,.038,.052);
  light.emissiveColor=new B.Color3(.42,.39,.24);
  tail.emissiveColor=new B.Color3(.3,.015,.035);
  const chrome=mat(name+' silver accents','#929eac'),rim=mat(name+' wheel rims','#9da9b8');
@@ -170,28 +164,16 @@ function car(name,color,index,lane){
  part('hood detail',{width:1.6,height:.055,depth:.7},dark,0,1.965,1.95);
  part('windshield highlight',{width:2.25,height:.045,depth:.12},chrome,0,2.7,.65);
  part('rear bumper strip',{width:2.8,height:.095,depth:.12},chrome,0,1.12,-3.29);
- const reflector=mat(name+' rear reflectors','#d94236');
- reflector.emissiveColor=new B.Color3(.15,.016,.01);
- for(const x of [-1.43,1.43]){
-  part('rear reflector',{width:.28,height:.12,depth:.10},reflector,x,1.01,-3.27);
-  part('front fog light',{width:.32,height:.12,depth:.12},light,x,1.03,3.26);
-  part('door handle',{width:.33,height:.07,depth:.13},chrome,x*1.23,1.69,-.66);
- }
- part('rear license recess',{width:1.25,height:.33,depth:.11},dark,0,1.36,-3.32);
- part('license plate',{width:.98,height:.20,depth:.12},chrome,0,1.36,-3.4);
  part('spoiler',{width:3.8,height:.19,depth:.52},dark,0,2.35,-3.0);
  for(const x of [-1.32,1.32]){
   part('headlamp',{width:.72,height:.23,depth:.14},light,x,1.58,3.2);
   part('headlamp surround',{width:.85,height:.055,depth:.18},chrome,x,1.73,3.21);
-  part('headlamp lower detail',{width:.66,height:.045,depth:.16},chrome,x,1.44,3.23);
   part('taillamp',{width:.73,height:.23,depth:.14},tail,x,1.52,-3.2);
   part('tail accent',{width:.79,height:.045,depth:.16},chrome,x,1.68,-3.22);
   part('mirror',{width:.48,height:.28,depth:.46},paint,x*1.16,2.15,.5);
-  part('mirror glass',{width:.31,height:.14,depth:.09},glass,x*1.16,2.16,.25);
   for(const z of [-2.12,2.12]){let wheel=B.MeshBuilder.CreateCylinder(name+' wheel',{diameter:1.55,height:.65,tessellation:12},scene);wheel.parent=root;wheel.rotation.z=Math.PI/2;wheel.position.set(x*1.33,.82,z);wheel.material=dark;
    let hub=B.MeshBuilder.CreateCylinder(name+' alloy rim',{diameter:.9,height:.675,tessellation:10},scene);
-   hub.parent=root;hub.rotation.z=Math.PI/2;hub.position.set(x*1.33,.82,z);hub.material=rim;
-   let cap=B.MeshBuilder.CreateCylinder(name+' wheel hub cap',{diameter:.24,height:.70,tessellation:8},scene);cap.parent=root;cap.rotation.z=Math.PI/2;cap.position.set(x*1.33,.82,z);cap.material=chrome}
+   hub.parent=root;hub.rotation.z=Math.PI/2;hub.position.set(x*1.33,.82,z);hub.material=rim}
  }
  const c={root,index,lane,speed:0,lap:0,progress:0,boost:0};place(c,index,lane);return c
 }
@@ -368,7 +350,7 @@ function saveGarage(){
  localStorage.setItem('nbr_handling_level',String(handlingLevel));
  localStorage.setItem('nbr_coins',String(coins));
 }
-function applyCar(){applyCarStyle();applyCosmetics();const spec=carsCatalog[selectedCar];const chosen=customPaint[selectedCar];const color=paintPalette.includes(chosen)?chosen:spec.color;const paintColor=B.Color3.FromHexString(color);player.root.getChildMeshes().forEach(m=>{if(m.name==='YOU body'||m.name==='YOU front hood'||m.name==='YOU rear deck'||m.name==='YOU roof'||m.name==='YOU mirror'||m.name==='YOU windshield pillar'||m.name==='YOU rear pillar')m.material.diffuseColor=paintColor})}
+function applyCar(){applyCarStyle();applyCosmetics();const spec=carsCatalog[selectedCar];const chosen=customPaint[selectedCar];const color=paintPalette.includes(chosen)?chosen:spec.color;const paintColor=B.Color3.FromHexString(color);player.root.getChildMeshes().forEach(m=>{if(m.name==='YOU body'||m.name==='YOU front hood'||m.name==='YOU rear deck'||m.name==='YOU roof'||m.name==='YOU mirror')m.material.diffuseColor=paintColor})}
 function applyCosmetics(){
  const rimIndex=Math.max(0,Math.min(3,Number(rimChoices[selectedCar])||0));
  cosmeticRims.forEach(m=>m.material=rimMaterials[rimIndex]);
