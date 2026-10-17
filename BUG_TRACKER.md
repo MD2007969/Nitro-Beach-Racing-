@@ -8,3 +8,6 @@
 | BUG-004 | High risk | Physics | Frame-delta driving behavior may vary at different frame rates | No fixed simulation timestep | Introduce accumulator and deterministic physics updates with regression tests | Not executed | Open |
 
 **Evidence rule:** Do not mark an error fixed until the failed test is reproduced, repaired and rerun successfully. Prior user screenshot is evidence of failure, not proof of root cause.
+
+## Diagnostic update — 2026-10-17
+Development commit `1a7c39a` adds Android WebView console logging with tag `NitroWebView`. Commit `5237e29` updates emulator CI to flag recognizable JavaScript exceptions and failed resource loads. These are diagnostic improvements, **not evidence the historical startup defect is fixed**. No Android emulator or device run has been observed in this session.
