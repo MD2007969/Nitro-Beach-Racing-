@@ -237,6 +237,8 @@ const carsCatalog=[
  {name:'Sunset Viper',price:650,color:'#ee4c70',speed:1.18,handling:1.12},
  {name:'Nitro Phantom',price:1300,color:'#a06dff',speed:1.27,handling:1.16}
 ];
+const paintPalette=['#ff9f18','#25c8d8','#ee4c70','#a06dff','#f4f4f4','#222b38','#53c66d','#ffd14d'];
+let customPaint={};try{const saved=JSON.parse(localStorage.getItem('nbr_custom_paint_v1')||'{}');if(saved&&typeof saved==='object'&&!Array.isArray(saved))customPaint=saved}catch(e){}
 let ownedCars=JSON.parse(localStorage.getItem('nbr_owned_cars')||'[0]');
 if(!Array.isArray(ownedCars))ownedCars=[0];
 let selectedCar=Number(localStorage.getItem('nbr_selected_car')||0);
@@ -283,12 +285,23 @@ function seriesText(){
 }
 function saveGarage(){
  localStorage.setItem('nbr_owned_cars',JSON.stringify(ownedCars));
+ localStorage.setItem('nbr_custom_paint_v1',JSON.stringify(customPaint));
  localStorage.setItem('nbr_selected_car',String(selectedCar));
  localStorage.setItem('nbr_speed_level',String(speedLevel));
  localStorage.setItem('nbr_handling_level',String(handlingLevel));
  localStorage.setItem('nbr_coins',String(coins));
 }
-function applyCar(){const spec=carsCatalog[selectedCar];player.root.getChildMeshes().forEach(m=>{if(m.name==='YOU body'||m.name==='YOU front hood'||m.name==='YOU rear deck'||m.name==='YOU roof'||m.name==='YOU mirror')m.material.diffuseColor=B.Color3.FromHexString(spec.color)})}
+function applyCar(){const spec=carsCatalog[selectedCar];const chosen=customPaint[selectedCar];const color=paintPalette.includes(chosen)?chosen:spec.color;const paintColor=B.Color3.FromHexString(color);player.root.getChildMeshes().forEach(m=>{if(m.name==='YOU body'||m.name==='YOU front hood'||m.name==='YOU rear deck'||m.name==='YOU roof'||m.name==='YOU mirror')m.material.diffuseColor=paintColor})}
+function refreshPaint(){
+ const options=document.getElementById('paintOptions'),status=document.getElementById('paintStatus');
+ if(!options||!status)return;
+ const chosen=customPaint[selectedCar]||carsCatalog[selectedCar].color;
+ options.innerHTML=paintPalette.map((color,i)=>'<button type="button" data-paint="'+i+'" class="'+(chosen===color?'selected':'')+'" style="background:'+color+'" aria-label="Paint color '+(i+1)+'"></button>').join('');
+ status.textContent='Paint is FREE · Saved for '+carsCatalog[selectedCar].name;
+ options.querySelectorAll('[data-paint]').forEach(button=>button.onclick=()=>{
+  customPaint[selectedCar]=paintPalette[Number(button.dataset.paint)];saveGarage();applyCar();refreshPaint();
+ });
+}
 function refreshMaps(){
  const el=document.getElementById('mapOptions');
  if(!el)return;
@@ -302,6 +315,7 @@ function refreshMaps(){
  });
 }
 function refreshGarage(){
+ refreshPaint();
  document.getElementById('garageCoins').textContent='🪙 '+coins+' coins';
  document.getElementById('garageCars').innerHTML=carsCatalog.map((spec,i)=>'<button data-car="'+i+'" style="background:'+(selectedCar===i?'#35a86c':'#263e57')+';color:white;margin:4px;border:1px solid #8ca4ba">'+spec.name+' · '+(ownedCars.includes(i)?selectedCar===i?'SELECTED':'OWNED':spec.price+' coins')+'</button>').join('');
  document.querySelectorAll('[data-car]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.car),spec=carsCatalog[i];if(!ownedCars.includes(i)){if(coins<spec.price){alert('Not enough coins! Race in Career to earn more.');return}coins-=spec.price;ownedCars.push(i)}selectedCar=i;saveGarage();applyCar();refreshGarage()});
