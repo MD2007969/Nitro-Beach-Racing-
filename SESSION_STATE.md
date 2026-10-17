@@ -46,3 +46,9 @@ Do not claim autonomous execution outside an active session. When user types UND
 - Local tool check: Node 22 present, Gradle absent; no local APK generated.
 - Next exact action: inspect GitHub Actions run for `nitro-buggy-2-development-v2`, download logs if failed; repair build or runtime issue; do not merge to main without successful validation.
 - Protected UNDO checkpoint untouched.
+
+## Testing continuation — 2026-10-17
+- Latest code commit: `8f0f794187b0426384cb3d39771f194d89b6468a`.
+- Static checks executed via connector V8: game JS parses; DOM IDs match HTML; initialization marker and CI assertion present. PASS.
+- APK compilation: NOT RUN here. Android emulator: NOT RUN here. Device: NOT RUN. GitHub Actions run results unavailable in connector.
+- Exact next action: inspect GitHub Actions job logs/artifacts for latest development commit, especially `nitro-android-startup-diagnostics` screenshot/logcat. Correct confirmed failures and rerun. Do not touch protected recovery branch or main.
