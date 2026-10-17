@@ -17,7 +17,10 @@ assert.match(html,/<script src="main\.js"><\/script>/,'Main game must load');
 assert.match(js,/engine\.runRenderLoop\(/,'Rendering loop must be registered');
 assert.match(js,/function begin\(/,'Race startup must exist');
 assert.match(js,/function finish\(/,'Race completion must exist');
-const createLapTracker = require('../android-studio/app/src/main/assets/lap-progress.js');
+const lapModule = {exports: {}};
+vm.runInNewContext(fs.readFileSync(path.join(root, 'android-studio/app/src/main/assets/lap-progress.js'), 'utf8'),
+  {module: lapModule}, {filename: 'lap-progress.js'});
+const createLapTracker = lapModule.exports;
 assert.ok(html.includes('<script src="lap-progress.js"></script><script src="main.js"></script>'),
   'Lap tracker must load before the game');
 const lap = createLapTracker(160);
