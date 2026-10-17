@@ -2,29 +2,3 @@ plugins { id 'com.android.application' }
 android { namespace 'com.nitrobeach.racing'; compileSdk 35
  defaultConfig { applicationId 'com.nitrobeach.racing'; minSdk 24; targetSdk 35; versionCode 1; versionName '0.1.1' }
 }
-
-// Package the 3D engine inside the APK so the game does not depend on a
-// runtime CDN connection. Fail the build instead of shipping an empty asset.
-def engineAsset = file('src/main/assets/babylon.js')
-tasks.register('prepareOfflineBabylon') {
-  outputs.file(engineAsset)
-  doLast {
-    if (!engineAsset.exists() || engineAsset.length() < 100000) {
-      engineAsset.parentFile.mkdirs()
-      def temporary = file(engineAsset.path + '.download')
-      try {
-        def connection = new URL('https://cdn.babylonjs.com/babylon.js').openConnection()
-        connection.connectTimeout = 30000
-        connection.readTimeout = 60000
-        connection.setRequestProperty('User-Agent', 'NitroBuggy2-Android-Build')
-        connection.inputStream.withCloseable { input ->
-          temporary.withOutputStream { output -> output << input }
-        }
-        if (temporary.length() < 100000) throw new GradleException('Downloaded Babylon.js is too small')
-        java.nio.file.Files.move(temporary.toPath(), engineAsset.toPath(),
-          java.nio.file.StandardCopyOption.REPLACE_EXISTING)
-      } finally { temporary.delete() }
-    }
-  }
-}
-tasks.named('preBuild').configure { dependsOn(tasks.named('prepareOfflineBabylon')) }
