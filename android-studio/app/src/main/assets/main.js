@@ -97,6 +97,27 @@ for(let i=0;i<85;i++){
  const k=(i*17)%N,side=i%2?1:-1,p=offset(k,side*(44+((i*13)%55)));
  if(!clearOfTrack(p,5))continue;
  if(Math.abs(p.x)<80&&Math.abs(p.z)<70)continue;let trunk=B.MeshBuilder.CreateCylinder('palm',{height:7,diameterTop:.6,diameterBottom:1.3,tessellation:6},scene);trunk.position=p.add(new B.Vector3(0,3.5,0));trunk.material=brown;let leaves=B.MeshBuilder.CreateSphere('canopy',{diameter:8,segments:5},scene);leaves.scaling.y=.4;leaves.position=p.add(new B.Vector3(0,8,0));leaves.material=green}
+// Lightweight scenery accents are placed far from the drivable surface.
+const scenicAccent=mat('scenery detail',selectedMap===1?'#5dc5ec':selectedMap===2?'#d5a46b':selectedMap===3?'#54795b':'#f5d89b');
+scenicAccent.specularColor=new B.Color3(.05,.05,.05);
+for(let i=0;i<18;i++){
+ const k=(i*19+7)%N,side=i%2?1:-1;
+ const p=offset(k,side*(68+(i%4)*17));
+ if(!clearOfTrack(p,9))continue;
+ if(selectedMap===1){
+  const sign=B.MeshBuilder.CreateBox('city neon panel',{width:3.5,height:5,depth:.25},scene);
+  sign.position.set(p.x,9,p.z);sign.material=scenicAccent;
+ }else if(selectedMap===2){
+  const dune=B.MeshBuilder.CreateSphere('distant sand dune',{diameter:16+(i%3)*5,segments:5},scene);
+  dune.scaling.y=.24;dune.position.set(p.x,.7,p.z);dune.material=scenicAccent;
+ }else if(selectedMap===3){
+  const tree=B.MeshBuilder.CreateCylinder('forest pine',{height:13,diameterTop:0,diameterBottom:7,tessellation:6},scene);
+  tree.position.set(p.x,7,p.z);tree.material=green;
+ }else{
+  const boulder=B.MeshBuilder.CreateSphere('coastal stone',{diameter:6+(i%3)*2,segments:5},scene);
+  boulder.scaling.y=.48;boulder.position.set(p.x,1.6,p.z);boulder.material=scenicAccent;
+ }
+}
 if(selectedMap!==0){
  const accent=mat('map accent',selectedMap===1?'#48c7e9':selectedMap===2?'#a67c52':selectedMap===3?'#345b40':'#a1d3d9');
  for(let i=0;i<35;i++){
@@ -160,10 +181,15 @@ function place(c,index,lane){let p=offset((index+N)%N,lane);c.root.position.set(
 const player=car('YOU','#ff9f18',0,-3),bots=[car('RIVAL 1','#e83e64',N-3,3),car('RIVAL 2','#22bbd2',N-6,-3),car('RIVAL 3','#9b65ee',N-9,3)];camera.lockedTarget=player.root;
 
 const fxBlue=mat('nitro glow','#15b9ff'),fxOrange=mat('nitro core','#ffe2a2'),smokeMat=mat('drift dust','#e9e5d5');
-const flames=[],smoke=[];
+const flames=[],flameCores=[],smoke=[];
+fxBlue.emissiveColor=new B.Color3(.05,.38,.72);
+fxOrange.emissiveColor=new B.Color3(.62,.32,.08);
 for(const x of [-.85,.85]){
  let f=B.MeshBuilder.CreateCylinder('nitro flame',{height:2.2,diameterTop:.3,diameterBottom:.8,tessellation:8},scene);
  f.parent=player.root;f.rotation.x=Math.PI/2;f.position.set(x,.95,-4.0);f.material=fxBlue;f.setEnabled(false);flames.push(f);
+ let core=B.MeshBuilder.CreateCylinder('nitro inner flame',{height:1.35,diameterTop:.13,diameterBottom:.38,tessellation:7},scene);
+ core.parent=player.root;core.rotation.x=Math.PI/2;core.position.set(x,.95,-3.75);
+ core.material=fxOrange;core.setEnabled(false);flameCores.push(core);
 }
 for(const x of [-1.4,1.4]){
  let puff=B.MeshBuilder.CreateSphere('drift dust',{diameter:1.1,segments:6},scene);
@@ -173,6 +199,7 @@ function renderCarEffects(){
  const boost=active&&countdown<=0&&held('shift')&&!held('s','arrowdown')&&player.boost>0;
  const drifting=active&&countdown<=0&&held(' ')&&Math.abs(player.speed)>8;
  flames.forEach((f,i)=>{f.setEnabled(boost);f.scaling.y=1+Math.sin(elapsed*28+i)*.25});
+ flameCores.forEach((f,i)=>{f.setEnabled(boost);f.scaling.y=1+Math.sin(elapsed*34+i*2)*.17});
  smoke.forEach((p,i)=>{p.setEnabled(drifting);p.scaling.set(1.1+Math.abs(Math.sin(elapsed*7+i))*.65,.6,1.3)});
 }
 const pickups=[];for(let i=8;i<N;i+=16){let orb=B.MeshBuilder.CreateTorus('pickup',{diameter:3,thickness:.65},scene);orb.material=mat('pickup mat','#ffe028');orb.position=offset(i,i%3===0?5:-5).add(new B.Vector3(0,2,0));pickups.push({mesh:orb,active:true,cool:0})}
