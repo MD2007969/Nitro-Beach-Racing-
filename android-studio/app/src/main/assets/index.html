@@ -88,10 +88,10 @@
  }
  window.addEventListener('error',function(e){fail('JavaScript error: '+(e.message||'Unknown error')+' at '+(e.filename||'game')+':'+(e.lineno||0));});
  window.addEventListener('unhandledrejection',function(e){fail('Game initialization failed: '+String(e.reason||'Unknown rejection'));});
- window.nitroStartupCheck=function(){if(!window.BABYLON){fail('3D engine failed to load. Check internet access. An offline engine bundle is being prepared.');return false;}return true;};
+ window.nitroStartupCheck=function(){if(!window.BABYLON){fail('Bundled 3D engine failed to load. Please reinstall the latest APK.');return false;}return true;};
  window.nitroMarkStarted=function(){started=true;};
- setTimeout(function(){if(!window.BABYLON)fail('3D engine could not be downloaded. Connect to the internet and restart the game.');},12000);
+ setTimeout(function(){if(!window.BABYLON)fail('Bundled 3D engine is missing. Please reinstall the latest APK.');},12000);
 })();
 </script>
-<script src="https://cdn.babylonjs.com/babylon.js"></script>
+<script src="babylon.js"></script>
 <script>if(window.nitroStartupCheck()) { var gameScript=document.createElement('script');gameScript.src='main.js';gameScript.onerror=function(){document.getElementById('startupErrorMessage').textContent='Game script could not be loaded.';document.getElementById('startupError').style.display='block';};document.body.appendChild(gameScript);}</script></body></html>
