@@ -1,0 +1,78 @@
+<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Nitro Beach Racing</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#061b2b;color:white;font-family:system-ui}canvas{width:100%;height:100%;touch-action:none}#hud{position:absolute;top:12px;left:12px;font-weight:800;text-shadow:0 2px 5px #000;font-size:18px;pointer-events:none}#menu{position:absolute;inset:0;background:#061a2ddd;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center}button{border:0;border-radius:12px;background:#ffb300;padding:12px 20px;font-weight:800;cursor:pointer}#touch{position:absolute;bottom:16px;left:0;right:0;display:flex;justify-content:space-between;padding:0 16px;pointer-events:none}#touch button{pointer-events:auto;opacity:.82;margin:3px}#message{position:absolute;top:35%;width:100%;text-align:center;font-size:46px;font-weight:900;text-shadow:0 4px 8px black;pointer-events:none}small{opacity:.8}#touch{bottom:max(12px,env(safe-area-inset-bottom));align-items:flex-end;gap:10px;box-sizing:border-box;padding:0 12px;z-index:5}
+#touch .steering,#touch .actions{display:flex;align-items:flex-end;gap:8px}
+#touch .actions{display:grid;grid-template-columns:repeat(2,72px);grid-template-rows:repeat(2,65px);gap:7px}
+#touch button{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;outline:none;min-width:58px;min-height:64px;margin:0;border:2px solid #ffffff77;border-radius:18px;color:#fff;background:#253951e8;font-size:15px;box-shadow:0 4px 0 #07131eaa;opacity:1;padding:6px;font-weight:900}
+#touch button:active,#touch button.pressed{background:#ff9e20;transform:translateY(3px);box-shadow:0 1px 0 #07131e}
+#touch .steering button{width:68px;height:82px;font-size:30px}
+
+#touch .brake{grid-column:2;grid-row:2;background:#c63d4c}
+#touch .nitro{grid-column:1;grid-row:2;background:#1677d5}
+#touch .drift{grid-column:1;grid-row:1}
+#touch .power{grid-column:2;grid-row:1}
+
+@media(max-width:650px){#touch{padding:0 7px;gap:5px}#touch .steering{gap:5px}#touch .steering button{width:53px;min-width:53px;height:72px}#touch .actions{grid-template-columns:repeat(2,67px);grid-template-rows:repeat(2,59px);gap:5px}#touch .actions button{min-width:43px;min-height:52px;font-size:11px;border-radius:13px}}
+#garage{position:absolute;inset:0;z-index:12;background:#061a2df5;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:14px;box-sizing:border-box;text-align:center;overflow-y:auto}
+#menu{overflow-y:auto;box-sizing:border-box;padding:14px 8px;gap:7px}#menu h1{font-size:clamp(21px,5vw,34px);margin:3px}#menu p{margin:3px}#mapPicker button{padding:9px 11px;font-size:12px;min-height:38px}#garage h2{margin:4px}#garageCars{display:flex;justify-content:center;flex-wrap:wrap;max-width:650px}#garage button{min-height:42px}
+
+/* Version 0.7: streamlined race UI, accessible touch targets and results cards */
+*{-webkit-tap-highlight-color:transparent}
+#menu{background:linear-gradient(155deg,#071a2af2,#17324af2 60%,#0b182cf5);backdrop-filter:blur(6px)}
+#menu button,#garage button,#results button{transition:transform .12s ease,background .12s ease;box-shadow:0 3px 0 #050e19a6}
+#menu button:active,#garage button:active,#results button:active{transform:translateY(2px)}
+#menu h1{letter-spacing:1px;text-shadow:0 3px 12px #00b9ff5c}
+#hud{background:#071c30cc;border:1px solid #ffffff30;border-radius:14px;padding:9px 12px;font-size:13px;line-height:1.6;max-width:60vw;box-shadow:0 6px 20px #0005}
+.hudTag{color:#92d9ff;font-size:12px}.hudPosition{color:#ffd166;font-weight:900;font-size:18px}.hudSpeed{font-size:19px;color:#e9fbff}
+#message.counting{font-size:clamp(65px,12vw,110px);color:#ffe46b;text-shadow:0 0 20px #ffaf18,0 5px 15px #000;animation:countPop .3s ease-out}
+@keyframes countPop{from{transform:scale(1.3);opacity:.6}to{transform:scale(1);opacity:1}}
+#touch .steering button{background:#184365eb}#touch .drift{background:#604da4}#touch .power{background:#ac6b20}
+#garage{background:linear-gradient(155deg,#091e32f5,#102f47f7);gap:12px}
+#garageCars button{min-width:145px;max-width:190px;min-height:58px;border-radius:13px}
+#results{position:absolute;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:#041321ee;backdrop-filter:blur(7px);padding:12px;box-sizing:border-box}
+.resultCard{width:min(440px,95vw);max-height:94vh;overflow:auto;background:linear-gradient(150deg,#153a56,#0b2034);border:1px solid #70bde977;border-radius:22px;padding:20px;box-sizing:border-box;box-shadow:0 15px 50px #0009;text-align:center}
+.resultCard h2{margin:4px 0;color:#ffdb73;font-size:25px}.resultCard p{font-size:13px;line-height:1.5}
+#resultReward{display:block;margin:12px 0;color:#a6f4c7}
+.resultRow{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;margin:5px 0;border-radius:9px;background:#ffffff12}
+.resultRow.isPlayer{background:#21895e75;border:1px solid #7effbc}
+#resultStandings{font-size:12px;line-height:1.6;color:#b8dff3;margin:10px 0}
+#results button{margin:5px;padding:12px 16px;min-height:46px}
+@media(max-width:650px){#hud{font-size:11px;max-width:55vw;padding:6px 8px}.hudPosition{font-size:15px}.hudSpeed{font-size:16px}.resultCard{padding:14px}.resultRow{padding:8px 11px}}
+#menu{z-index:10}#garage{z-index:20}#touch{display:none;z-index:5}#pauseMenu{z-index:30}#results{z-index:25}#pauseButton{position:absolute;top:12px;right:12px;z-index:8;background:#143b56e8;color:white;border:1px solid #ffffff70;padding:10px 12px;display:none;min-height:46px;box-shadow:0 4px 15px #0008}#pauseMenu{position:absolute;inset:0;z-index:18;display:none;align-items:center;justify-content:center;background:#051522df;backdrop-filter:blur(7px);padding:16px;box-sizing:border-box}.pauseCard{background:linear-gradient(150deg,#194763,#0b2135);border:1px solid #83c6ec99;border-radius:22px;width:min(390px,95vw);padding:22px 16px;box-sizing:border-box;text-align:center;box-shadow:0 12px 40px #0009}.pauseCard h2{color:#ffdc82;margin:4px 0 12px}.pauseCard p{color:#c5e6f7}.pauseCard button{display:block;width:100%;margin:10px 0;min-height:47px;color:#102133}.pauseCard small{display:block;line-height:1.5;color:#bdd8e8}#pauseMainMenu{background:#e4a0a0}#pauseSound{background:#a4d8ed}@media(max-width:650px){#pauseButton{top:7px;right:7px;font-size:12px;padding:8px 10px}}
+
+/* Racing HUD 3.0: compact, readable and touch-safe on small Android screens. */
+#hud{top:max(10px,env(safe-area-inset-top));left:10px;max-width:min(67vw,300px);padding:10px 12px;border:1px solid #ffffff30;border-radius:15px;background:linear-gradient(135deg,#071927e8,#102c40d9);box-shadow:0 7px 22px #0006;backdrop-filter:blur(3px);font-size:13px;line-height:1.35;z-index:4;box-sizing:border-box}
+#hud .hudTag{display:block;font-size:10px;font-weight:800;letter-spacing:1px;color:#9adfff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hud .hudRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px}
+#hud .hudPosition{font-size:20px;font-weight:1000;color:#ffd05c}
+#hud .hudSpeed{font-size:30px;line-height:1;font-weight:1000;color:#fff;letter-spacing:-1px}
+#hud .hudUnit{font-size:10px;color:#a8cadb;letter-spacing:1px}
+#hud .hudNitroTrack{height:6px;margin:7px 0 4px;border-radius:99px;background:#294258;overflow:hidden}
+#hud .hudNitroFill{display:block;height:100%;background:linear-gradient(90deg,#1989f8,#36e4ff);border-radius:99px}
+#hud .hudDetails{font-size:11px;color:#d7e8f4}
+#hud .hudDetails strong{color:#fff}
+@media(max-width:390px){#hud{padding:8px 9px;max-width:64vw}#hud .hudSpeed{font-size:25px}#hud .hudPosition{font-size:17px}}
+
+/* Race ceremony: CSS-only effects to avoid GPU particle overhead. */
+#message.counting{top:29%;font-size:clamp(76px,17vw,132px);letter-spacing:3px;color:#fff4b3;filter:drop-shadow(0 0 15px #ffad33);animation:countPop .3s ease-out}
+#message.counting.go{color:#77ffba;filter:drop-shadow(0 0 20px #19d9a4)}
+#message.counting::before{content:'●  ●  ●';display:block;font-size:18px;letter-spacing:14px;color:#ff605c;margin-bottom:8px}
+#message.counting.go::before{color:#4fff96}
+#message.celebrate{top:19%;font-size:clamp(29px,8vw,62px);color:#ffdd76;animation:ceremonyPop .65s cubic-bezier(.2,1.3,.4,1) both;z-index:26}
+@keyframes ceremonyPop{0%{opacity:0;transform:scale(.65) translateY(20px)}75%{opacity:1;transform:scale(1.09)}100%{opacity:1;transform:scale(1)}}
+.resultCard.winner{border:2px solid #ffe17c;box-shadow:0 0 30px #f9c34a55,0 15px 50px #0009;animation:ceremonyPop .5s ease-out}
+#resultTrophy{font-size:56px;line-height:1.1;filter:drop-shadow(0 4px 10px #ffce5c88);animation:trophyFloat 2.5s ease-in-out infinite}
+@keyframes trophyFloat{50%{transform:translateY(-5px)}}
+@media(prefers-reduced-motion:reduce){#message.counting,#message.celebrate,.resultCard.winner,#resultTrophy{animation:none}}
+
+.garageCustom{background:#0b2239e8;border:1px solid #76c7f44d;border-radius:15px;padding:9px 12px;width:min(470px,92vw);box-sizing:border-box}
+.garageCustom>strong{font-size:12px;letter-spacing:1px;color:#a9e6ff}
+#paintOptions{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;margin:8px 0}
+#garage #paintOptions button{width:40px;height:40px;min-height:40px;padding:0;border-radius:50%;border:3px solid #ffffff88;box-shadow:0 2px 8px #0008}
+#garage #paintOptions button.selected{outline:3px solid #fff;outline-offset:2px}
+#paintStatus{display:block;color:#cde9f5;font-size:11px}
+#garageCars button{font-size:12px}
+
+#rimOptions,#spoilerOptions{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:8px 0}
+#garage #rimOptions button,#garage #spoilerOptions button{padding:8px 10px;min-height:36px;font-size:11px;border-radius:10px;background:#24465d;color:#e9f8ff;border:1px solid #8ab8cf66}
+#garage #rimOptions button.selected,#garage #spoilerOptions button.selected{background:#1b966d;border-color:#a5ffe1}
+#cosmeticStatus{display:block;color:#b5e5fa;font-size:11px}
+</style></head><body><canvas id="game"></canvas><div id="hud"></div><button id="pauseButton" type="button" aria-label="Pause race">⏸ PAUSE</button><div id="message"></div><div id="touch"><div class="steering"><button type="button" data-key="a" aria-label="Steer left">◀</button><button type="button" data-key="d" aria-label="Steer right">▶</button></div><div class="actions"><button type="button" class="power" data-key="e">POWER</button><button type="button" class="drift" data-key=" ">DRIFT</button><button type="button" class="nitro" data-key="Shift">NITRO</button><button type="button" class="brake" data-key="s">BRAKE</button></div></div><div id="menu"><h1>🏁 NITRO BEACH RACING</h1><p>RACING WORLD · v0.7</p><div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:center"><button data-theme="day">☀️ DAY</button><button data-theme="sunset">🌅 SUNSET</button><button data-theme="neon">🌙 NEON NIGHT</button></div><div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center"><button data-difficulty="easy">EASY</button><button data-difficulty="normal">NORMAL</button><button data-difficulty="hard">HARD</button><button data-difficulty="expert">EXPERT</button></div><button id="start">QUICK RACE</button><button id="career">CAREER: ROOKIE CUP</button><small id="careerRules" style="max-width:90%;font-weight:700;color:#ffe3a2"></small><small id="seriesStandings" style="max-width:94%;color:#a8f3d7"></small><small id="championshipRecord" style="max-width:94%;color:#ffe19c;font-weight:700"></small><button id="garageOpen">🏎️ GARAGE & UPGRADES</button><div id="mapPicker" style="max-width:640px"><strong>🌍 CHOOSE RACING MAP</strong><div id="mapOptions" style="display:flex;flex-wrap:wrap;justify-content:center"></div><small id="mapDescription"></small></div><small>Auto-accelerate · BRAKE to slow · steer left/right · DRIFT · NITRO · POWER</small><small id="progress"></small></div><div id="pauseMenu"><div class="pauseCard"><h2>⏸ GAME PAUSED</h2><p id="pauseContext">Race paused</p><button id="pauseResume">▶ RESUME</button><button id="pauseRestart">↻ RESTART RACE</button><button id="pauseSound">🔊 SOUND ON</button><button id="pauseMainMenu">⌂ MAIN MENU</button><small>Restarting discards this race. Completed championship rounds stay saved.</small></div></div><div id="results"><div class="resultCard"><div id="resultTrophy" aria-hidden="true">🏁</div><h2 id="resultTitle">🏁 RACE COMPLETE</h2><p id="resultSubtitle"></p><strong id="resultReward"></strong><div id="resultTable"></div><div id="resultStandings"></div><button id="resultContinue">▶ CONTINUE</button><button id="resultMenu">⌂ MENU</button></div></div><div id="garage"><h2>🏎️ NITRO GARAGE</h2><strong id="garageCoins"></strong><small>Earn coins in Career races · Select cars and upgrade performance</small><div id="garageCars"></div><div class="garageCustom"><strong>🎨 CUSTOM PAINT</strong><div id="paintOptions"></div><small id="paintStatus"></small></div><div class="garageCustom"><strong>🛞 RIMS & SPOILER</strong><div id="rimOptions"></div><div id="spoilerOptions"></div><small id="cosmeticStatus"></small></div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button id="upgradeSpeed">⚡ SPEED</button><button id="upgradeHandling">🎯 HANDLING</button></div><button id="garageClose">⬅ BACK TO RACING</button></div><script src="https://cdn.babylonjs.com/babylon.js"></script><script src="lap-progress.js"></script><script src="main.js"></script></body></html>
