@@ -48,3 +48,11 @@ No background development is running beyond the available tool session.
 - Build, smoke test and emulator execution **not verified** in this assistant session. No new game logic has been merged into main.
 - **Current phase:** P01 stabilization; **completed and release-verified phases:** 0/14.
 - **Next priority:** Inspect CI run; repair observed failures before modifying gameplay.
+
+## Continued development — 2026-10-17
+- GitHub combined commit status API for `80c1ef7` returned **no statuses**, so no CI success can be inferred.
+- `1a7c39a`: Android WebView console logging added for JavaScript startup diagnostics.
+- `5237e29`: CI emulator script now detects WebView error log signatures.
+- `b573237`: bug tracker updated.
+- Local environment has Node.js 22 but no Gradle executable; full Android build and emulator were **not run locally**.
+- Development-only branch changed; checkpoint and main unchanged. **Next:** obtain actual CI run logs and address the first confirmed failure.
