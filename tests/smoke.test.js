@@ -14,3 +14,10 @@ assert.match(js,/function updateLapSectors\(/);
 assert.match(js,/nextLapSector===lapSectors.length/);
 assert.match(js,/nextLapSector=0;countdown=/);
 console.log('PASS: JavaScript parses, core UI elements exist, lap checkpoints and race reset are wired.');
+
+assert.match(html,/<script src="babylon\.js"><\/script>/, 'engine must load from bundled asset');
+assert.doesNotMatch(html,/<script src="https:\/\/cdn\.babylonjs\.com/, 'runtime must not require engine CDN');
+const gradle=fs.readFileSync('android-studio/app/build.gradle','utf8');
+assert.match(gradle,/prepareOfflineBabylon/);
+assert.match(gradle,/dependsOn\(tasks.named\('prepareOfflineBabylon'\)\)/);
+console.log('PASS: offline engine asset is configured for packaging.');
