@@ -38,3 +38,11 @@ Open GitHub Actions for the `nitro-buggy-2-development-v2` branch. Inspect `Nitr
 
 ## Session policy
 Do not claim autonomous execution outside an active session. When user types UNDO, restore active game to the protected checkpoint while retaining history and user save data.
+
+## Continuation record — 2026-10-17
+- Latest verified GitHub write before this update: `9c301d3ccb365efb23856f290b7dced8e741ca0b` (documentation commit; **not** a verified Android build).
+- Files modified: `MainActivity.java`, `.github/workflows/nitro-v2-ci.yml`, `BUG_TRACKER.md`, `DEVELOPMENT_PROGRESS.md`, `SESSION_STATE.md`.
+- CI status lookup yielded no commit statuses; no Android build/emulator run verified.
+- Local tool check: Node 22 present, Gradle absent; no local APK generated.
+- Next exact action: inspect GitHub Actions run for `nitro-buggy-2-development-v2`, download logs if failed; repair build or runtime issue; do not merge to main without successful validation.
+- Protected UNDO checkpoint untouched.
