@@ -33,3 +33,35 @@ jobs:
           name: nitro-buggy-2-debug-apk
           path: android-studio/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+      - name: Configure KVM permissions
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Launch APK and capture Android startup logs
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          emulator-boot-timeout: 600
+          script: |
+            adb install -r android-studio/app/build/outputs/apk/debug/app-debug.apk
+            adb logcat -c
+            adb shell am start -n com.nitrobeach.racing/.MainActivity
+            sleep 25
+            adb logcat -d -v time > nitro-android-logcat.txt
+            adb shell dumpsys activity activities > nitro-activity-state.txt
+            if grep -E 'FATAL EXCEPTION|Process: com.nitrobeach.racing|Uncaught SyntaxError|Uncaught ReferenceError|Uncaught TypeError' nitro-android-logcat.txt; then
+              echo 'Android fatal error or JavaScript exception detected'
+              exit 1
+            fi
+            grep -q 'com.nitrobeach.racing' nitro-activity-state.txt || { echo 'Game activity not detected'; exit 1; }
+      - name: Upload Android startup diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nitro-android-startup-diagnostics
+          path: |
+            nitro-android-logcat.txt
+            nitro-activity-state.txt
+          if-no-files-found: ignore
