@@ -274,6 +274,18 @@ function beep(frequency=500,duration=.12,volume=.055,type='sine'){
   o.connect(g);g.connect(audioCtx.destination);o.start(now);o.stop(now+duration+.02);
  }catch(e){}
 }
+let wasNitro=false,wasDrifting=false,wasBraking=false;
+function resetSoundEvents(){wasNitro=false;wasDrifting=false;wasBraking=false}
+function raceSoundEvents(nitro,drift,brake){
+ if(nitro&&!wasNitro){beep(290,.2,.045,'sawtooth');setTimeout(()=>{if(active&&!paused)beep(540,.17,.035,'triangle')},95)}
+ if(drift&&!wasDrifting)beep(155,.14,.023,'triangle');
+ if(brake&&!wasBraking)beep(110,.09,.018,'sine');
+ wasNitro=nitro;wasDrifting=drift;wasBraking=brake;
+}
+function finishSound(rank){
+ if(rank===1){beep(523,.14,.045);setTimeout(()=>beep(659,.16,.045),160);setTimeout(()=>beep(784,.24,.05),330)}
+ else{beep(440,.13,.03);setTimeout(()=>beep(330,.23,.03),160)}
+}
 function engineAudio(){
  if(!soundEnabled||!active||paused||countdown>0){if(engineGain&&audioCtx)engineGain.gain.setTargetAtTime(0,audioCtx.currentTime,.06);return}
  if(!audioReady())return;
@@ -321,7 +333,7 @@ window.addEventListener('keydown',e=>{if(e.key==='Escape'&&active){e.preventDefa
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&active&&!paused)setPaused(true)});
 function begin(m){
  document.getElementById('results').style.display='none';
- paused=false;clearControls();
+ paused=false;clearControls();resetSoundEvents();
  document.getElementById('pauseMenu').style.display='none';
  document.getElementById('pauseButton').style.display='block';
  document.getElementById('touch').style.display='flex';
@@ -355,6 +367,7 @@ function finish(){
   return b.total-a.total;
  });
  const rank=competitors.findIndex(x=>x.id===0)+1;
+ finishSound(rank);
  let reward=mode==='career'?Math.max(30,120-rank*20):0;
  let result='FINISHED #'+rank+' · '+elapsed.toFixed(1)+'s';
  const finalScores=mode==='career'?seriesScores.slice():[0,0,0,0];
@@ -417,7 +430,8 @@ function drawMinimap(){
     ctx.strokeStyle='#07131c';ctx.lineWidth=1.5;ctx.stroke();
   }
 }
-engine.runRenderLoop(()=>{let dt=Math.min(engine.getDeltaTime()/1000,.04);if(active&&!paused){if(countdown>0){countdown-=dt;msg.textContent=countdown>1?Math.ceil(countdown):'GO!';msg.classList.add('counting');if(countdown<=0){msg.textContent='';msg.classList.remove('counting');beep(750,.16,.04)}else if(Math.ceil(countdown)!==Math.ceil(countdown+dt))beep(430,.07,.025)}else{elapsed+=dt;let turn=(held('a','arrowleft')?-1:0)+(held('d','arrowright')?1:0),accelerate=true,brake=held('s','arrowdown'),drift=held(' '),nitro=held('shift');let target=(brake?9:53)*(carsCatalog[selectedCar].speed+speedLevel*.045);player.boost=Math.min(100,player.boost+dt*(mode==='career'?championship[careerStage].boostRecharge:5));if(nitro&&!brake&&player.boost>0){target=95*(carsCatalog[selectedCar].speed+speedLevel*.045);player.boost=Math.max(0,player.boost-dt*(mode==='career'?championship[careerStage].nitroRate:23));msg.textContent='⚡ NITRO!'}else if(drift&&Math.abs(player.speed)>8){msg.textContent='💨 DRIFT!'}else if(msg.textContent==='⚡ NITRO!'||msg.textContent==='💨 DRIFT!'){msg.textContent=''}player.speed+=(target-player.speed)*Math.min(1,dt*(brake?3.5:1.5));player.root.rotation.y+=turn*dt*(.8+Math.min(Math.abs(player.speed)/42,1)*1.5)*(drift?2.1:1)*(carsCatalog[selectedCar].handling+handlingLevel*.06)*Math.sign(player.speed||1);let forward=new B.Vector3(Math.sin(player.root.rotation.y),0,Math.cos(player.root.rotation.y));player.root.position.addInPlace(forward.scale(player.speed*dt));let near=nearest(player.root.position);if(near.dist>15){player.speed*=1-dt*.9;if(near.dist>45){let p=offset(near.idx,0);player.root.position=B.Vector3.Lerp(player.root.position,p,.07)}}if(near.idx<12&&previous>N-16&&player.speed>0){player.lap++;if(player.lap>=(mode==='career'?championship[careerStage].laps:3))finish()}previous=near.idx;for(let b of bots){
+engine.runRenderLoop(()=>{let dt=Math.min(engine.getDeltaTime()/1000,.04);if(active&&!paused){if(countdown>0){countdown-=dt;msg.textContent=countdown>1?Math.ceil(countdown):'GO!';msg.classList.add('counting');if(countdown<=0){msg.textContent='';msg.classList.remove('counting');beep(750,.16,.04)}else if(Math.ceil(countdown)!==Math.ceil(countdown+dt))beep(430,.07,.025)}else{elapsed+=dt;let turn=(held('a','arrowleft')?-1:0)+(held('d','arrowright')?1:0),accelerate=true,brake=held('s','arrowdown'),drift=held(' '),nitro=held('shift');let target=(brake?9:53)*(carsCatalog[selectedCar].speed+speedLevel*.045);
+ raceSoundEvents(nitro&&!brake&&player.boost>0,drift&&Math.abs(player.speed)>8,brake&&Math.abs(player.speed)>10);player.boost=Math.min(100,player.boost+dt*(mode==='career'?championship[careerStage].boostRecharge:5));if(nitro&&!brake&&player.boost>0){target=95*(carsCatalog[selectedCar].speed+speedLevel*.045);player.boost=Math.max(0,player.boost-dt*(mode==='career'?championship[careerStage].nitroRate:23));msg.textContent='⚡ NITRO!'}else if(drift&&Math.abs(player.speed)>8){msg.textContent='💨 DRIFT!'}else if(msg.textContent==='⚡ NITRO!'||msg.textContent==='💨 DRIFT!'){msg.textContent=''}player.speed+=(target-player.speed)*Math.min(1,dt*(brake?3.5:1.5));player.root.rotation.y+=turn*dt*(.8+Math.min(Math.abs(player.speed)/42,1)*1.5)*(drift?2.1:1)*(carsCatalog[selectedCar].handling+handlingLevel*.06)*Math.sign(player.speed||1);let forward=new B.Vector3(Math.sin(player.root.rotation.y),0,Math.cos(player.root.rotation.y));player.root.position.addInPlace(forward.scale(player.speed*dt));let near=nearest(player.root.position);if(near.dist>15){player.speed*=1-dt*.9;if(near.dist>45){let p=offset(near.idx,0);player.root.position=B.Vector3.Lerp(player.root.position,p,.07)}}if(near.idx<12&&previous>N-16&&player.speed>0){player.lap++;if(player.lap>=(mode==='career'?championship[careerStage].laps:3))finish()}previous=near.idx;for(let b of bots){
   const i=bots.indexOf(b);
   if(b.finishTime!==null)continue;
   const playerTotal=player.lap*N+near.idx;
